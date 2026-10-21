@@ -195,20 +195,22 @@ function appelerClaude(?string $cours, array $contenu, ?array $schema, string $e
     $outputConfig = ['effort' => $effort];
     if ($schema !== null) $outputConfig['format'] = ['type' => 'json_schema', 'schema' => $schema];
 
+    $modele = (string) ($C['modele'] ?? 'claude-opus-5-5');
+    // Si le modèle refuse (filtre de sécurité trop prudent), Anthropic relance la demande sur un autre modèle.
+    // Haiku n'a pas de modèle de repli : le paramètre ne lui est pas envoyé.
+    $repli = str_contains($modele, 'haiku') ? [] : ['fallbacks' => 'default', 'betas' => ['server-side-fallback-2026-07-01']];
+
     $texte = '';
     $stop = null;
     $usage = [];
     try {
-        $flux = $client->beta->messages->createStream(
-            maxTokens: $maxTokens,
-            messages: [['role' => 'user', 'content' => $contenu]],
-            model: (string) ($C['modele'] ?? 'claude-opus-5-5'),
-            system: $system,
-            outputConfig: $outputConfig,
-            // Si le modèle refuse (filtre de sécurité trop prudent), Anthropic relance la demande sur un autre modèle.
-            fallbacks: 'default',
-            betas: ['server-side-fallback-2026-07-01'],
-        );
+        $flux = $client->beta->messages->createStream(...[
+            'maxTokens' => $maxTokens,
+            'messages' => [['role' => 'user', 'content' => $contenu]],
+            'model' => $modele,
+            'system' => $system,
+            'outputConfig' => $outputConfig,
+        ] + $repli);
         foreach ($flux as $ev) {
             switch ($ev->type) {
                 case 'message_start':
