@@ -1,13 +1,30 @@
 # QCM J7·J14·J28
 
 Application de QCM de révision pour une étudiante en 3e année de médecine.
-Elle ajoute elle-même ses cours : la page appelle Claude (avec son propre compte) pour créer les questions.
+Elle ajoute elle-même ses cours ; Claude crée les questions.
 
-- Page publiée (artifact claude.ai) : https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg
-- Source : `qcm/index.html` (un seul fichier, HTML + CSS + JS sans dépendance au chargement).
-- Pour modifier la page depuis une autre conversation : lire l'artifact (`Artifact` action `read` avec l'URL),
-  modifier `qcm/index.html`, puis republier avec `url` = l'URL ci-dessus (garder le même lien).
-  Capacités déclarées : `{"db": {}, "user": {}, "sample": {"images": true}}`.
+## Version hébergée (principale) : `hebergement/`
+
+Site PHP pour l'hébergement O2switch du propriétaire. L'étudiante n'a pas de compte Claude :
+elle se connecte avec un code d'accès (lien `?code=...`, cookie signé valable 400 jours).
+
+- `index.html` : toute l'interface (HTML + CSS + JS, pdf.js et JSZip chargés à la demande depuis cdnjs).
+- `api.php` : connexion, stockage en fichiers JSON dans `data/`, appels à Claude avec le SDK PHP officiel
+  (`anthropic-ai/sdk` + Guzzle, via Composer). Les consignes envoyées à Claude sont écrites côté serveur :
+  l'API ne sert qu'à créer des QCM, jamais de relais libre vers Claude.
+- `config.php` (non versionné, modèle : `config.exemple.php`) : clé API, code d'accès, secret, modèle, effort, limite d'appels par jour.
+- `construire-zip.sh` : produit `qcm-o2switch.zip` (dépendances incluses) à téléverser ; `LISEZMOI.txt` = guide d'installation.
+- Création d'un cours : le navigateur extrait le texte (PDF/Word/PowerPoint ; photos et PDF scannés → action `transcrire`),
+  puis `cours_creer` → `plan` (notions + liste des questions, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
+  Les actions longues répondent en NDJSON (`{"progres":n}` puis `{"fin":...}` ou `{"erreur":...}`).
+  Le texte du cours est un bloc système mis en cache ; sortie JSON garantie par `output_config.format` ;
+  `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`).
+- Test local sans clé : un faux serveur Anthropic + `'url_api' => 'http://127.0.0.1:PORT'` dans config.php.
+
+## Première version : artifact claude.ai (`qcm/index.html`)
+
+https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelqu'un connecté à claude.ai
+(capacités `db`, `user`, `sample`). Gardée pour mémoire ; l'étudiante utilise la version hébergée.
 
 ## Règles des QCM (demandées par l'étudiante, ne pas changer sans elle)
 
@@ -26,13 +43,15 @@ Elle ajoute elle-même ses cours : la page appelle Claude (avec son propre compt
 
 Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostatistique, Génétique médicale, PIX (socle numérique).
 
-## Données (base `db` de l'artifact)
+## Données
+
+Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots), `questions/<id>.json`,
+`sources/<id>.txt`, `progres.json` (une seule élève), `usage.json` (appels du jour, jetons du mois).
+
+Artifact (base `db`) :
 
 - `cours/<id>` : titre, matiere, creeLe (ISO), statut (`en_cours` | `incomplet` | `pret`), nbQuestions, parNiveau, notions[], lots[]
   (un lot = niveau + items `{angle, type, nbVraies}` + statut ; sert à compléter une création interrompue).
 - `questions/<id>` : `{questions: [{id, niveau (1-3), type (QRU|QCM), enonce, propositions: [{id a-e, texte, vrai, explication}], a_retenir}]}`.
 - `sources/<id>` : `{texte}` texte du cours, gardé pour « Compléter ».
 - `data/users/<uid>/<coursId>` (privé) : `{tentatives: [{date, mode, portee, points, max, parNiveau}], dernier: {questionId: points}}`.
-
-Pour ajouter un cours à la main (sans passer par la page), écrire `cours/<id>` avec `statut: "pret"` et `questions/<id>`
-au format ci-dessus avec l'outil `ArtifactData`.

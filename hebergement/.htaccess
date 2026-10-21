@@ -1,0 +1,18 @@
+Options -Indexes
+DirectoryIndex index.html
+
+# Fichiers qui ne doivent jamais être téléchargés depuis le navigateur.
+<FilesMatch "^(config\.php|config\.exemple\.php|composer\.(json|lock)|LISEZMOI\.txt|construire-zip\.sh)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Les réponses de l'API arrivent au fur et à mesure : pas de compression qui les retiendrait.
+<Files "api.php">
+  SetEnv no-gzip 1
+</Files>

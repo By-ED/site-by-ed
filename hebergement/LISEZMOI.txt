@@ -1,0 +1,53 @@
+QCM J7·J14·J28 : INSTALLATION SUR O2SWITCH
+(environ 15 minutes, une seule fois)
+
+1. CLÉ API CLAUDE
+   - Va sur https://console.anthropic.com et crée un compte (ou connecte-toi).
+   - Menu Billing : ajoute du crédit. 10 $ suffisent pour commencer.
+     Compte environ 1 à 2 $ par cours (estimation). Le vrai coût s'affiche en bas du site.
+   - Conseil : dans Limits, fixe une limite de dépense mensuelle.
+   - Menu API Keys > Create Key. Copie la clé (elle commence par sk-ant-).
+
+2. ENVOYER LES FICHIERS
+   - cPanel o2switch > Gestionnaire de fichiers > ton dossier principal (/home/ton-identifiant).
+   - Bouton « Charger » > choisis qcm-o2switch.zip.
+   - Clic droit sur qcm-o2switch.zip > « Extract ». Un dossier « qcm » apparaît.
+   - Tu peux supprimer le fichier zip.
+
+3. CRÉER LE SOUS-DOMAINE
+   - cPanel > Domaines > Créer un domaine.
+   - Domaine : par exemple qcm.ton-domaine.fr
+   - Décoche « Partager la racine du document ».
+   - Racine du document : qcm
+   - Valide.
+
+4. CONFIGURER
+   - Dans le Gestionnaire de fichiers, ouvre le dossier « qcm ».
+   - Clic droit sur config.exemple.php > « Copy » > nomme la copie config.php.
+   - Clic droit sur config.php > « Edit ». Remplis :
+       cle_api    : la clé copiée à l'étape 1
+       code_acces : un code que ta sœur utilisera (ex. un mot simple)
+       secret     : une longue phrase au hasard (personne n'a besoin de la connaître)
+   - Enregistre.
+
+5. VERSION DE PHP
+   - cPanel > « Sélecteur de version PHP » (ou MultiPHP Manager).
+   - Choisis PHP 8.2 ou plus récent pour qcm.ton-domaine.fr.
+
+6. TESTER
+   - Ouvre https://qcm.ton-domaine.fr/?code=TON-CODE
+   - Si https ne répond pas tout de suite, attends quelques minutes : o2switch crée le certificat
+     automatiquement (cPanel > SSL/TLS Status > « Run AutoSSL » pour accélérer).
+   - Ajoute un cours pour vérifier que tout marche.
+
+7. ENVOYER À TA SŒUR
+   - Envoie-lui le lien https://qcm.ton-domaine.fr/?code=TON-CODE
+   - Elle l'ouvre une fois sur son téléphone : elle reste connectée environ un an,
+     sans compte Claude.
+
+BON À SAVOIR
+   - Les cours et les scores sont dans qcm/data. Ne supprime pas ce dossier.
+   - Limite de sécurité : 60 appels à Claude par jour (environ 7 cours). Réglable dans config.php.
+   - Pour changer le code d'accès : modifie code_acces dans config.php.
+     Ta sœur devra retaper le nouveau code (ou rouvrir un lien ?code=...).
+   - Mise à jour du site : remplacer index.html, api.php et vendor/, sans toucher à config.php ni à data/.
