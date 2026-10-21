@@ -289,9 +289,13 @@ function schemaLot(): array
     ];
 }
 
-function consignePlan(string $matiere): string
+function consignePlan(string $matiere, array $dejaPoses = []): string
 {
-    return "Étape demandée : analyser le cours et préparer le plan des questions. Ne rédige pas encore les questions." . ($matiere ? "\nMatière indiquée par l'étudiante : $matiere." : '') . "\n\n"
+    $nouvelle = $dejaPoses
+        ? "\n\nUne série de questions existe déjà sur ce cours. Prépare une NOUVELLE série : mêmes règles et mêmes notions à couvrir, mais aucune question ne reprend l'angle d'une question déjà posée. "
+          . "Change d'angle : autre détail, autre piège, cas pratique, comparaison entre notions.\nQuestions déjà posées :\n- " . implode("\n- ", $dejaPoses)
+        : '';
+    return "Étape demandée : analyser le cours et préparer le plan des questions. Ne rédige pas encore les questions." . ($matiere ? "\nMatière indiquée par l'étudiante : $matiere." : '') . $nouvelle . "\n\n"
         . "1. \"titre\" : titre court et précis du cours (celui du document si possible).\n"
         . "2. \"matiere\" : la matière du cours parmi la liste proposée.\n"
         . "3. \"notions\" : la liste EXHAUSTIVE des notions du cours, dans l'ordre du cours : définitions, mécanismes, classifications, valeurs chiffrées et normes, signes, étiologies, exceptions, formules, schémas et tableaux. Une notion = une ligne courte.\n"
@@ -354,7 +358,7 @@ function specsPour(int $n): array
     return $specs;
 }
 
-function construireLots(array $plan): array
+function construireLots(array $plan, int $serie = 1): array
 {
     $lots = [];
     foreach (['facile' => 1, 'moyen' => 2, 'difficile' => 3] as $cle => $niveau) {
@@ -365,12 +369,12 @@ function construireLots(array $plan): array
         $items = [];
         foreach ($angles as $i => $angle) $items[] = ['angle' => $angle] + $specs[$i];
         $taille = (int) ceil(count($items) / ceil(count($items) / 6));
-        foreach (array_chunk($items, $taille) as $morceau) $lots[] = ['niveau' => $niveau, 'items' => $morceau, 'statut' => 'attente'];
+        foreach (array_chunk($items, $taille) as $morceau) $lots[] = ['niveau' => $niveau, 'serie' => $serie, 'items' => $morceau, 'statut' => 'attente'];
     }
     return $lots;
 }
 
-function normaliserQuestion(mixed $r, int $niveau): ?array
+function normaliserQuestion(mixed $r, int $niveau, int $serie): ?array
 {
     if (!is_array($r)) return null;
     $enonce = mb_substr(trim((string) ($r['enonce'] ?? '')), 0, 700);
@@ -385,7 +389,7 @@ function normaliserQuestion(mixed $r, int $niveau): ?array
     }
     $nv = count(array_filter($props, fn ($p) => $p['vrai']));
     if ($nv === 0) return null;
-    return ['id' => 'q' . bin2hex(random_bytes(5)), 'niveau' => $niveau, 'type' => $nv === 1 ? 'QRU' : 'QCM',
+    return ['id' => 'q' . bin2hex(random_bytes(5)), 'niveau' => $niveau, 'serie' => $serie, 'type' => $nv === 1 ? 'QRU' : 'QCM',
         'enonce' => $enonce, 'propositions' => $props, 'a_retenir' => mb_substr(trim((string) ($r['a_retenir'] ?? '')), 0, 600)];
 }
 
@@ -480,17 +484,31 @@ switch ($action) {
         $cours = chargerCours($id);
         $source = (string) @file_get_contents(cheminSource($id));
         if ($source === '') repondre(409, ['erreur' => 'source_absente']);
+        // « Nouvelles questions » : une série de plus sur le même cours, sans reprendre les angles déjà posés.
+        $nouvelle = !empty($entree['nouvelle']);
+        $serie = 1;
+        $dejaPoses = [];
+        if ($nouvelle) {
+            if (($cours['statut'] ?? '') !== 'pret') repondre(409, ['erreur' => 'incomplet']);
+            foreach ($cours['lots'] ?? [] as $l) {
+                $serie = max($serie, (int) ($l['serie'] ?? 1) + 1);
+                foreach ($l['items'] as $it) $dejaPoses[] = $it['angle'];
+            }
+        }
         ouvrirFlux();
-        $plan = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consignePlan($cours['matiere'] ?? '')]], schemaPlan(), (string) ($C['effort'] ?? 'high'), 32000), true);
-        $lots = is_array($plan) ? construireLots($plan) : [];
+        $plan = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consignePlan($cours['matiere'] ?? '', $dejaPoses)]], schemaPlan(), (string) ($C['effort'] ?? 'high'), 32000), true);
+        $lots = is_array($plan) ? construireLots($plan, $serie) : [];
         if (!$lots) finirEnErreur('plan');
-        $cours = avecVerrou($id, function () use ($id, $plan, $lots) {
+        $cours = avecVerrou($id, function () use ($id, $plan, $lots, $nouvelle, $serie) {
             $c = chargerCours($id);
             if (($c['titre'] ?? '') === '') $c['titre'] = mb_substr(trim((string) ($plan['titre'] ?? '')), 0, 160) ?: 'Cours sans titre';
             if (($c['matiere'] ?? '') === '') $c['matiere'] = in_array($plan['matiere'] ?? '', MATIERES, true) ? $plan['matiere'] : 'Autre';
-            $c['notions'] = array_slice(array_values(array_filter(array_map(fn ($n) => mb_substr(trim((string) $n), 0, 200), (array) ($plan['notions'] ?? [])))), 0, 200);
-            $c['lots'] = $lots;
-            $c['statut'] = statutDe($lots);
+            if (!$nouvelle || !($c['notions'] ?? [])) {
+                $c['notions'] = array_slice(array_values(array_filter(array_map(fn ($n) => mb_substr(trim((string) $n), 0, 200), (array) ($plan['notions'] ?? [])))), 0, 200);
+            }
+            $c['lots'] = $nouvelle ? array_merge($c['lots'] ?? [], $lots) : $lots;
+            $c['series'] = $serie;
+            $c['statut'] = statutDe($c['lots']);
             ecrireJson(cheminCours($id), $c);
             return $c;
         });
@@ -538,7 +556,8 @@ switch ($action) {
         }
         $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneLot($niveau, $lot['items'], $autresAngles)]], schemaLot(),
             (string) ($C['effort'] ?? 'high'), 32000, compteurQuestions(count($lot['items']))), true);
-        $nouvelles = array_values(array_filter(array_map(fn ($r) => normaliserQuestion($r, $niveau), (array) ($brut['questions'] ?? []))));
+        $serieLot = (int) ($lot['serie'] ?? 1);
+        $nouvelles = array_values(array_filter(array_map(fn ($r) => normaliserQuestion($r, $niveau, $serieLot), (array) ($brut['questions'] ?? []))));
         if (!$nouvelles) finirEnErreur('invalid_json');
         $cours = $marquer('ok', $nouvelles);
         $termine = true;

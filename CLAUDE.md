@@ -17,6 +17,7 @@ Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
   (`anthropic-ai/sdk` + Guzzle, via Composer). Les consignes envoyées à Claude sont écrites côté serveur :
   l'API ne sert qu'à créer des QCM, jamais de relais libre vers Claude.
 - `config.php` (non versionné, modèle : `config.exemple.php`) : clé API, code d'accès, secret, modèle, effort, limite d'appels par jour.
+  Le propriétaire a choisi Sonnet 5.5 en effort `medium` pour réduire le coût (Opus haut ≈ 0,85 $ pour 33 questions).
 - `construire-zip.sh` : produit `qcm-o2switch.zip` (dépendances incluses) à téléverser ; `LISEZMOI.txt` = guide d'installation.
 - Création d'un cours : le navigateur extrait le texte (PDF/Word/PowerPoint ; photos et PDF scannés → action `transcrire`).
   Les pages de PDF qui contiennent des images (schémas, tableaux) sont aussi envoyées à `transcrire` en mode `visuels` :
@@ -49,6 +50,8 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Modes : entraînement (correction après chaque question) et examen (correction à la fin).
 - Ordre des questions et des propositions remélangé à chaque passage.
 - Historique des scores par cours, bouton « Refaire mes erreurs ».
+- « Nouvelles questions » : nouvelle série sur un cours déjà enregistré (plan avec la liste des angles déjà posés) ;
+  l'étudiante choisit Série 1, Série 2… ou Toutes. Champ `serie` sur chaque lot et chaque question (absent = 1).
 
 Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostatistique, Génétique médicale, PIX (socle numérique).
 

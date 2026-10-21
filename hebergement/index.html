@@ -46,6 +46,7 @@ h1,h2,h3{text-wrap:balance}
 h2{font-family:var(--f-display);font-weight:600;font-size:21px;line-height:1.2;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
 .compte{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:500}
 .sec{display:grid}
+.sec > .btn{justify-self:start}
 button{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .btn{font-weight:700;border-radius:8px;padding:11px 18px;min-height:46px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
@@ -266,7 +267,7 @@ const DEMO = {
 // ---------- État ----------
 const S = {
   vue:"chargement", cours:[], progres:{}, usage:null, questionsCache:{}, coursId:null, mode:"entrainement",
-  quiz:null, gen:null, ajout:null, confirmSuppr:null, toutVoir:false, erreurPage:null, sauvegarde:null, erreurCode:null
+  quiz:null, gen:null, ajout:null, confirmSuppr:null, confirmSerie:null, serie:null, toutVoir:false, erreurPage:null, sauvegarde:null, erreurCode:null
 };
 S.ajout = nouvelAjout();
 function nouvelAjout(){ return {fichiers:[], texte:"", matiere:"", titre:""}; }
@@ -458,7 +459,7 @@ function pied(){
 const coursCourant = () => S.coursId === "demo" ? DEMO : S.cours.find(c => c.id === S.coursId);
 const questionsDe = (id) => id === "demo" ? DEMO.questions : S.questionsCache[id];
 async function ouvrirCours(id){
-  aller("cours", {coursId:id, confirmSuppr:null});
+  aller("cours", {coursId:id, confirmSuppr:null, confirmSerie:null, serie:null});
   if (id !== "demo" && !S.questionsCache[id]){
     try { S.questionsCache[id] = (await api("questions", undefined, "&id=" + encodeURIComponent(id))).questions; }
     catch (e){ if (e.code !== "auth") S.erreurPage = "Les questions n'ont pas pu être chargées. Recharge la page."; }
@@ -468,7 +469,11 @@ async function ouvrirCours(id){
 function vueCours(){
   const c = coursCourant();
   if (!c) return h("div", {class:"vue"}, lienRetour("Mes cours", () => aller("accueil")), h("p", {class:"note"}, "Ce cours n'existe plus."));
-  const qs = questionsDe(c.id);
+  const toutes = questionsDe(c.id);
+  // Chaque « Nouvelles questions » ajoute une série ; par défaut on propose la plus récente.
+  const series = toutes ? [...new Set(toutes.map(q => q.serie || 1))].sort((a, b) => a - b) : [1];
+  const serie = S.serie === "toutes" || series.includes(S.serie) ? S.serie : series[series.length - 1];
+  const qs = toutes && serie !== "toutes" ? toutes.filter(q => (q.serie || 1) === serie) : toutes;
   const prog = S.progres[c.id] || {};
   const dern = prog.dernier || {};
   const nb = (n) => qs ? qs.filter(q => q.niveau === n).length : ((c.parNiveau || {})[n] || 0);
@@ -494,26 +499,41 @@ function vueCours(){
       h("p", {}, total + " " + pluriel(total, "question prête", "questions prêtes") + ". Une partie des questions n'a pas pu être créée."),
       h("button", {class:"btn", type:"button", onclick:() => completer(c)}, "Compléter les questions manquantes")) : null,
     h("section", {class:"sec serie"},
-      h("h2", {}, "Lancer une série"),
+      h("h2", {}, "Faire le QCM"),
+      series.length > 1 ? h("div", {class:"seg", role:"group", "aria-label":"Questions"},
+        series.map(n => h("button", {type:"button", "aria-pressed":String(serie === n), onclick:() => { S.serie = n; render(); }}, "Série " + n)),
+        h("button", {type:"button", "aria-pressed":String(serie === "toutes"), onclick:() => { S.serie = "toutes"; render(); }}, "Toutes")) : null,
       h("div", {class:"seg", role:"group", "aria-label":"Mode"},
         h("button", {type:"button", "aria-pressed":String(mode === "entrainement"), onclick:() => { S.mode = "entrainement"; render(); }}, "Entraînement"),
         h("button", {type:"button", "aria-pressed":String(mode === "examen"), onclick:() => { S.mode = "examen"; render(); }}, "Examen")),
-      h("p", {class:"muted petit"}, mode === "entrainement" ? "Correction détaillée après chaque question." : "Aucune correction pendant la série : tout est corrigé à la fin, comme le jour de l'examen."),
+      h("p", {class:"muted petit"}, mode === "entrainement" ? "Correction détaillée après chaque question." : "Aucune correction pendant le QCM : tout est corrigé à la fin, comme le jour de l'examen."),
       !qs ? h("p", {class:"muted"}, "Chargement des questions…") :
       h("div", {class:"departs"},
         depart("tout", "Tout le cours", total + " questions, du facile au difficile", false, true),
         [1,2,3].map(n => depart(String(n), NIVEAUX[n], nb(n) + " " + pluriel(nb(n), "question", "questions"), !nb(n))),
         depart("erreurs", "Mes erreurs", nErr ? nErr + " à refaire" : "aucune pour l'instant", !nErr))),
     c.notions && c.notions.length ? h("details", {class:"notions"}, h("summary", {}, "Notions couvertes (" + c.notions.length + ")"), h("ul", {}, c.notions.map(n => h("li", {}, n)))) : null,
+    !c.demo && c.statut === "pret" && !genActive ? blocNouvelles(c) : null,
     historique(c, prog),
     c.demo ? null : suppression(c));
+}
+function blocNouvelles(c){
+  if (S.confirmSerie !== c.id) return h("section", {class:"sec"},
+    h("h2", {}, "Nouvelles questions"),
+    h("p", {class:"muted petit"}, "Crée une nouvelle série sur ce cours, avec d'autres angles que les questions déjà posées. Le cours est déjà enregistré : rien à remettre."),
+    h("button", {class:"btn", type:"button", onclick:() => { S.confirmSerie = c.id; render(); }}, "Nouvelles questions"));
+  return h("div", {class:"note"},
+    h("p", {}, "Créer une nouvelle série de questions sur ce cours ? Compte quelques minutes, et le prix d'une création de cours."),
+    h("div", {class:"actions"},
+      h("button", {class:"btn primaire", type:"button", onclick:() => nouvellesQuestions(c)}, "Créer la nouvelle série"),
+      h("button", {class:"btn", type:"button", onclick:() => { S.confirmSerie = null; render(); }}, "Annuler")));
 }
 function historique(c, prog){
   const t = (prog.tentatives || []).slice().reverse();
   return h("section", {class:"sec"}, h("h2", {}, "Historique"),
-    !t.length ? h("p", {class:"muted"}, "Pas encore de série terminée sur ce cours.") :
+    !t.length ? h("p", {class:"muted"}, "Pas encore de QCM terminé sur ce cours.") :
     h("div", {class:"table-wrap"}, h("table", {},
-      h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", {}, "Jour"), h("th", {}, "Série"), h("th", {}, "Mode"), h("th", {class:"num"}, "Points"), h("th", {class:"num"}, "/20"))),
+      h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", {}, "Jour"), h("th", {}, "Partie"), h("th", {}, "Mode"), h("th", {class:"num"}, "Points"), h("th", {class:"num"}, "/20"))),
       h("tbody", {}, t.map(x => h("tr", {},
         h("td", {}, fmtDate(x.date)), h("td", {}, c.demo ? "–" : "J+" + jPlus(c.creeLe, x.date)),
         h("td", {}, PORTEES[x.portee] || x.portee), h("td", {}, x.mode === "examen" ? "Examen" : "Entraînement"),
@@ -673,7 +693,7 @@ function vueFin(){
     h("div", {class:"bilan"},
       h("p", {class:"bigscore"}, fmt(tot), h("span", {class:"sur"}, " / " + max + " pt")),
       h("p", {class:"sur20"}, "soit " + sur20(tot, max) + " / 20"),
-      max < Q.items.length ? h("p", {class:"muted petit"}, "Série arrêtée après " + max + " questions sur " + Q.items.length + ".") : null,
+      max < Q.items.length ? h("p", {class:"muted petit"}, "QCM arrêté après " + max + " questions sur " + Q.items.length + ".") : null,
       sauve ? h("p", {class:"muted petit"}, sauve) : null),
     h("div", {class:"table-wrap"}, h("table", {},
       h("thead", {}, h("tr", {}, h("th", {}, "Niveau"), h("th", {class:"num"}, "Points"), h("th", {class:"num"}, "/20"))),
@@ -687,7 +707,7 @@ function vueFin(){
     h("section", {class:"sec corrections"},
       h("h2", {}, Q.mode === "examen" ? "Correction" : "Correction de tes erreurs"),
       Q.mode === "entrainement" ? h("label", {class:"bascule"}, h("input", {type:"checkbox", id:"toutvoir", checked:S.toutVoir || null, onchange:e => { S.toutVoir = e.target.checked; render(); }}), "Afficher aussi les questions justes") : null,
-      liste.length ? liste.map(carteCorrection) : h("p", {class:"muted"}, "Aucune erreur sur cette série.")));
+      liste.length ? liste.map(carteCorrection) : h("p", {class:"muted"}, "Aucune erreur sur ce QCM.")));
 }
 
 // ----- Ajout d'un cours -----
@@ -768,6 +788,7 @@ function messageErreur(e){
     invalid_json:"La réponse de Claude était incomplète. Réessaie avec « Compléter ».",
     cancelled:"Création arrêtée. Les questions déjà créées sont gardées.",
     deja_en_cours:"Une partie des questions est encore en cours de création. Réessaie « Compléter » dans quelques minutes.",
+    incomplet:"Il manque encore des questions à ce cours : utilise d'abord « Compléter les questions manquantes ».",
     format:"Format non pris en charge" + (e && e.fichier ? " (" + e.fichier + ")" : "") + ". Utilise PDF, Word (.docx), PowerPoint (.pptx), photos ou texte.",
     trop_court:"Le texte du cours est trop court ou n'a pas pu être lu.",
     plan:"Le plan du cours n'a pas pu être établi. Réessaie avec « Compléter ».",
@@ -934,6 +955,17 @@ async function completer(c){
   }
   await finGeneration();
 }
+async function nouvellesQuestions(c){
+  const ctl = new AbortController();
+  S.gen = {etapes:[], ctl, titre:(c.titre || "Cours") + " · nouvelle série", fini:false, erreur:null, coursId:c.id, total:0, complet:false};
+  aller("generation", {confirmSerie:null, serie:null});
+  try { await planEtLots(c.id, null, ctl.signal, true); }
+  catch (e){
+    S.gen.erreur = messageErreur(e);
+    for (const x of S.gen.etapes) if (x.etat === "en_cours") x.etat = "echec";
+  }
+  await finGeneration();
+}
 async function finGeneration(){
   S.gen.fini = true;
   if (S.gen.coursId) delete S.questionsCache[S.gen.coursId];
@@ -941,12 +973,13 @@ async function finGeneration(){
   if (S.vue === "generation") render();
 }
 // Le plan (liste des notions et des questions à poser) puis les lots de questions, 2 à la fois.
-async function planEtLots(id, cours, sig){
+async function planEtLots(id, cours, sig, nouvelle){
   if (!cours){
-    etape("plan", "Repérage des notions", "en_cours", "analyse…");
-    cours = (await apiFlux("plan", {id}, null, sig)).cours;
-    S.gen.titre = cours.titre;
-    etape("plan", null, "ok", cours.notions.length + " notions · " + cours.lots.reduce((s, l) => s + l.items.length, 0) + " questions prévues");
+    etape("plan", nouvelle ? "Choix de nouveaux angles" : "Repérage des notions", "en_cours", "analyse…");
+    cours = (await apiFlux("plan", {id, nouvelle:!!nouvelle}, null, sig)).cours;
+    if (!nouvelle) S.gen.titre = cours.titre;
+    const prevues = cours.lots.filter(l => l.statut !== "ok").reduce((s, l) => s + l.items.length, 0);
+    etape("plan", null, "ok", (nouvelle ? "" : cours.notions.length + " notions · ") + prevues + " questions prévues");
   }
   const lots = cours.lots;
   const todo = lots.map((_, i) => i).filter(i => lots[i].statut !== "ok");
@@ -956,14 +989,14 @@ async function planEtLots(id, cours, sig){
     const n = lots[i].niveau; rang[n] = (rang[n] || 0) + 1;
     etape("lot" + i, "Questions " + NIVEAUX_PL[n] + (parNiv[n] > 1 ? " (" + rang[n] + "/" + parNiv[n] + ")" : ""), "attente", lots[i].items.length + " questions");
   });
-  let stop = null, total = cours.nbQuestions || 0, echecs = 0;
+  let stop = null, total = cours.nbQuestions || 0, ajoutees = 0, echecs = 0;
   await pool(todo, 2, async i => {
     if (stop || sig.aborted) return;
     const nbItems = lots[i].items.length;
     etape("lot" + i, null, "en_cours", "rédaction…");
     try {
       const fin = await apiFlux("lot", {id, index:i}, k => etape("lot" + i, null, null, "question " + k + "/" + nbItems), sig);
-      total = fin.cours.nbQuestions;
+      total = fin.cours.nbQuestions; ajoutees += fin.ajoutees;
       etape("lot" + i, null, "ok", fin.ajoutees + " " + pluriel(fin.ajoutees, "question", "questions"));
     } catch (e){
       echecs++;
@@ -974,7 +1007,7 @@ async function planEtLots(id, cours, sig){
       else S.gen.dernierProbleme = e;
     }
   });
-  S.gen.total = total; S.gen.complet = !echecs && !stop;
+  S.gen.total = nouvelle ? ajoutees : total; S.gen.complet = !echecs && !stop;
   if (stop) throw stop;
   if (echecs && S.gen.dernierProbleme && !total) throw S.gen.dernierProbleme;
 }
