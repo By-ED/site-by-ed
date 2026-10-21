@@ -21,8 +21,8 @@ Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
 - `construire-zip.sh` : produit `qcm-o2switch.zip` (dépendances incluses) à téléverser ; `LISEZMOI.txt` = guide d'installation.
 - Création d'un cours : le navigateur extrait le texte (PDF/Word/PowerPoint ; photos et PDF scannés → action `transcrire`).
   Les pages de PDF qui contiennent des images (schémas, tableaux) sont aussi envoyées à `transcrire` en mode `visuels` :
-  le texte de ces images n'est pas dans la couche texte du PDF. Ensuite,
-  puis `cours_creer` → `plan` (notions + liste des questions, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
+  le texte de ces images n'est pas dans la couche texte du PDF.
+  Ensuite `cours_creer` → `plan` (notions + liste des questions, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
   Les actions longues répondent en NDJSON (`{"progres":n}` puis `{"fin":...}` ou `{"erreur":...}`).
   Le texte du cours est un bloc système mis en cache ; sortie JSON garantie par `output_config.format` ;
   `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`).
