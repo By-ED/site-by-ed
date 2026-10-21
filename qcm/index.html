@@ -1,0 +1,1093 @@
+<title>QCM J7·J14·J28</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout : une colonne d'étude étroite ; le motif de la grille de réponses d'examen (cases A–E) porte l'identité */
+:root{
+  --bg:#edf2f0; --surface:#ffffff; --sunk:#e1e9e6; --ink:#13221f; --muted:#51625e; --line:#cbd7d3;
+  --accent:#0b6a61; --accent-soft:#d2e9e5; --on-accent:#ffffff;
+  --ok:#17783a; --ok-soft:#d9efdf; --bad:#ad271e; --bad-soft:#f6dbd8; --warn:#875200; --warn-soft:#f5e6cc;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1514; --surface:#14201e; --sunk:#1b2927; --ink:#e1ebe8; --muted:#97a8a4; --line:#2b3b38;
+  --accent:#57c5b7; --accent-soft:#163a35; --on-accent:#03201c;
+  --ok:#6dd08f; --ok-soft:#163423; --bad:#ff8e85; --bad-soft:#3c1b19; --warn:#efb45c; --warn-soft:#382911;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1514; --surface:#14201e; --sunk:#1b2927; --ink:#e1ebe8; --muted:#97a8a4; --line:#2b3b38;
+  --accent:#57c5b7; --accent-soft:#163a35; --on-accent:#03201c;
+  --ok:#6dd08f; --ok-soft:#163423; --bad:#ff8e85; --bad-soft:#3c1b19; --warn:#efb45c; --warn-soft:#382911;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 72px}
+.vue{display:grid;gap:22px}
+p{margin:0}
+h1,h2,h3{text-wrap:balance}
+.eyebrow{font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.petit{font-size:14px}
+.masthead{display:grid;gap:10px;padding-top:8px}
+.masthead h1{font-family:var(--f-display);font-weight:800;font-size:clamp(40px,9vw,56px);line-height:1;margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.jbox{font-family:var(--f-mono);font-size:.36em;font-weight:600;border:2px solid var(--accent);color:var(--accent);padding:5px 8px;border-radius:4px;line-height:1}
+.lede{max-width:58ch;color:var(--muted)}
+.h-page{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,6vw,36px);line-height:1.1;margin:4px 0 0}
+h2{font-family:var(--f-display);font-weight:600;font-size:21px;line-height:1.2;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+.compte{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-weight:500}
+.sec{display:grid}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{font-weight:700;border-radius:8px;padding:11px 18px;min-height:46px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primaire{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primaire:hover:not(:disabled){filter:brightness(1.08)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.lien{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
+.lien.danger{color:var(--bad)}
+.retour{justify-self:start;text-decoration:none}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ajout-cta{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.note{background:var(--sunk);padding:12px 14px;border-radius:8px;display:grid;gap:10px}
+.alerte{background:var(--bad-soft);color:var(--bad);padding:12px 14px;border-radius:8px;font-weight:700}
+.liste{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ligne{width:100%;display:flex;gap:12px;align-items:center;justify-content:space-between;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;cursor:pointer}
+.ligne:hover{border-color:var(--accent)}
+.ligne-main{display:grid;gap:3px;min-width:0}
+.ligne-titre{font-weight:700;overflow-wrap:anywhere}
+.ligne-meta{font-size:14px;color:var(--muted)}
+.ligne-side{display:grid;justify-items:end;gap:6px;flex-shrink:0}
+.jalons{display:flex;gap:4px;flex-wrap:wrap}
+.jal{font-family:var(--f-mono);font-size:11px;font-weight:500;padding:2px 5px;border:1.5px solid var(--line);border-radius:3px;color:var(--muted);line-height:1.3}
+.jal.fait{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.jal.du{border-color:var(--accent);color:var(--accent);font-weight:600}
+.jal.manque{text-decoration:line-through;opacity:.6}
+.jalons.grand .jal{font-size:13px;padding:4px 8px}
+.jal small{font-size:inherit;font-weight:500}
+.score{font-family:var(--f-mono);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+.score small{color:var(--muted);font-weight:500}
+.score.vide{font-size:12px;color:var(--muted);font-weight:500}
+.pied{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:18px;font-size:14px;color:var(--muted)}
+.pied .lien{justify-self:start}
+/* cours */
+.cours-tete{display:grid;gap:8px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;justify-self:start;background:var(--surface)}
+.seg button{border:0;background:none;padding:9px 16px;font-weight:700;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.serie{display:grid;gap:12px}
+.departs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.depart{display:grid;gap:2px;text-align:left;justify-items:start}
+.depart small{font-weight:400;color:var(--muted);font-size:13px}
+.depart.primaire small{color:var(--on-accent);opacity:.85}
+.notions{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px}
+.notions summary{cursor:pointer;font-weight:700}
+.notions ul{margin:10px 0 0;padding-left:20px;display:grid;gap:4px;font-size:15px}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+th.num{text-align:right}
+.zone-suppr{justify-self:start}
+/* quiz */
+.q-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.q-top .lien{font-family:var(--f-body);font-size:15px}
+.q-count{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.progress{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;margin-top:-12px}
+.progress i{display:block;height:100%;background:var(--accent)}
+.q-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.pips{display:inline-flex;gap:3px}
+.pips i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--accent)}
+.pips i.on{background:var(--accent)}
+.tag{font-family:var(--f-mono);font-size:12px;letter-spacing:.04em;padding:3px 8px;border-radius:4px;background:var(--sunk);color:var(--ink)}
+.tag.qru{background:var(--accent-soft)}
+.enonce{font-family:var(--f-body);font-size:20px;line-height:1.4;font-weight:700;margin:0;max-width:65ch}
+.enonce.petit{font-size:17px}
+.props{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.prop{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);overflow:hidden}
+.prop-btn{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;width:100%;padding:12px 14px;background:none;border:0;text-align:left;cursor:pointer;line-height:1.45}
+.prop-btn[aria-disabled="true"],.prop-btn.statique{cursor:default}
+.prop-txt{padding-top:4px;font-size:17px;overflow-wrap:anywhere}
+.box{width:32px;height:32px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:4px;font-family:var(--f-mono);font-weight:600;font-size:15px}
+.props.qru .box{border-radius:50%}
+.prop:hover:not(.juste,.oubliee,.atort,.neutre){border-color:var(--accent)}
+.prop.sel{border-color:var(--accent)}
+.prop.sel .box{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.prop.juste{border-color:var(--ok);background:var(--ok-soft)}
+.prop.juste .box{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.prop.oubliee{border-color:var(--warn);background:var(--warn-soft)}
+.prop.oubliee .box{background:transparent;border-color:var(--warn);color:var(--warn);border-style:dashed}
+.prop.atort{border-color:var(--bad);background:var(--bad-soft)}
+.prop.atort .box{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.prop.neutre .box{background:transparent;border-color:var(--line);color:var(--muted)}
+.expl{padding:0 14px 13px 60px;font-size:15px;line-height:1.5}
+.verdict{font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-right:8px}
+.verdict.v{color:var(--ok)}
+.verdict.f{color:var(--bad)}
+.etat-txt{font-weight:700}
+.etat-txt.oubliee{color:var(--warn)}
+.etat-txt.atort{color:var(--bad)}
+.resultat{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:12px 16px;border-radius:var(--r);font-family:var(--f-mono);font-size:15px;background:var(--sunk)}
+.resultat strong{font-family:var(--f-body);font-size:17px}
+.resultat.r0{background:var(--ok-soft);color:var(--ok)}
+.resultat.r1{background:var(--warn-soft);color:var(--warn)}
+.resultat.r2,.resultat.r3{background:var(--bad-soft);color:var(--bad)}
+.retenir{background:var(--surface);border:1px dashed var(--accent);border-radius:var(--r);padding:12px 16px;display:grid;gap:4px}
+.retenir .eyebrow{color:var(--accent)}
+.barre-action{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);margin-top:-6px}
+.astuce{font-size:13px;color:var(--muted)}
+@media (hover:none){.astuce{display:none}}
+/* bilan */
+.bilan{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.bigscore{font-family:var(--f-display);font-weight:800;font-size:clamp(46px,12vw,68px);line-height:1;font-variant-numeric:tabular-nums}
+.bigscore .sur{font-size:.45em;color:var(--muted);font-weight:600}
+.sur20{font-family:var(--f-mono);font-size:17px;font-weight:600}
+.dist{display:flex;flex-wrap:wrap;gap:6px}
+.dist span{font-family:var(--f-mono);font-size:13px;padding:4px 9px;border-radius:4px;background:var(--sunk)}
+.dist .d0{background:var(--ok-soft);color:var(--ok)}
+.dist .d1{background:var(--warn-soft);color:var(--warn)}
+.dist .d2,.dist .d3{background:var(--bad-soft);color:var(--bad)}
+.corrections{display:grid;gap:16px}
+.carte-corr{display:grid;gap:10px;padding-top:16px;border-top:1px solid var(--line)}
+.bascule{display:flex;align-items:center;gap:8px;font-size:15px;cursor:pointer}
+.bascule input{width:18px;height:18px;accent-color:var(--accent)}
+/* ajout + génération */
+.form{display:grid;gap:18px}
+.champ{display:grid;gap:6px;min-width:0}
+.champ label{font-weight:700}
+.aide{font-size:14px;color:var(--muted)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+input[type=text],select,textarea{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+textarea{resize:vertical;min-height:150px}
+input[type=file]{font:inherit;max-width:100%}
+.fichiers{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:6px}
+.fichiers li{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-width:0}
+.fichiers li span{overflow-wrap:anywhere;min-width:0}
+.fichiers small{color:var(--muted)}
+.etapes{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.etape{display:grid;grid-template-columns:16px 1fr auto;gap:12px;align-items:center}
+.puce{width:14px;height:14px;border-radius:3px;border:2px solid var(--line)}
+.etape.en_cours .puce{border-color:var(--accent);animation:pulse 1.1s ease-in-out infinite}
+.etape.ok .puce{background:var(--ok);border-color:var(--ok)}
+.etape.echec .puce{background:var(--bad);border-color:var(--bad)}
+.etape.attente{color:var(--muted)}
+.etape-detail{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right}
+@keyframes pulse{50%{background:var(--accent)}}
+@media (prefers-reduced-motion:reduce){.etape.en_cours .puce{animation:none;background:var(--accent-soft)}}
+@media (max-width:520px){
+  .ligne{flex-wrap:wrap}
+  .ligne-side{justify-items:start;grid-auto-flow:column;align-items:center;gap:12px}
+  .duo{grid-template-columns:1fr}
+  .expl{padding-left:14px}
+  .enonce{font-size:18px}
+  .prop-txt{font-size:16px}
+}
+</style>
+
+<div class="wrap"><main id="app"></main></div>
+
+<script>
+(function(){
+"use strict";
+
+const MATIERES = ["Appareil urinaire","Appareil respiratoire","Immunopathologie","Biostatistique","Génétique médicale","PIX (socle numérique)","Autre"];
+const NIVEAUX = {1:"Facile",2:"Moyen",3:"Difficile"};
+const NIVEAUX_PL = {1:"faciles",2:"moyennes",3:"difficiles"};
+const NIVEAU_DESC = {
+  1:"FACILE : définitions, notions de base, reconnaissance directe d'une information du cours.",
+  2:"MOYEN : mécanismes, liens entre notions, comparaisons, application d'une notion.",
+  3:"DIFFICILE : détails fins, valeurs chiffrées précises, pièges subtils (inversions, chiffres modifiés, notions proches confondues), raisonnement ou calcul si le cours s'y prête."
+};
+const PORTEES = {tout:"Tout le cours","1":"Facile","2":"Moyen","3":"Difficile",erreurs:"Mes erreurs"};
+const JALONS = [7,14,28];
+const LETTRES = "ABCDE";
+const MAX_TEXTE = 230000;
+const LS_KEY = "qcm-j7-j14-j28";
+const FATAL = new Set(["not_granted","sampling_disabled","session_expired","rate_limited","cancelled","not_declared","capability_disabled","capability_removed","prompt_too_large","invalid_argument","quota_exceeded","revoked","local"]);
+const CDN = {
+  pdf:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+  pdfWorker:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
+  zip:"https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+};
+
+// ---------- Démo (questions d'exemple, pas tirées d'un cours) ----------
+const DEMO = {
+  id:"demo", demo:true, titre:"Démo · Physiologie rénale", matiere:"Démo", creeLe:new Date().toISOString(), statut:"pret",
+  notions:["Néphron et organisation du rein","Débit de filtration glomérulaire","Réabsorption tubulaire","Hormone antidiurétique","Clairance de la créatinine","Système rénine-angiotensine-aldostérone"],
+  questions:[
+    {id:"d1",niveau:1,type:"QRU",enonce:"Concernant l'organisation du rein, quelle est la proposition exacte ?",a_retenir:"Néphron = unité fonctionnelle (environ 1 million par rein) ; glomérules dans le cortex ; le tube collecteur n'appartient pas au néphron au sens strict.",propositions:[
+      {id:"a",vrai:true,texte:"Le néphron est l'unité structurale et fonctionnelle du rein.",explication:"Chaque rein en compte environ un million."},
+      {id:"b",vrai:false,texte:"Chaque rein contient environ 10 000 néphrons.",explication:"Chiffre modifié : chaque rein contient environ 1 million de néphrons."},
+      {id:"c",vrai:false,texte:"Les glomérules sont situés dans la médullaire rénale.",explication:"Les glomérules sont dans le cortex ; la médullaire contient les anses de Henlé et les tubes collecteurs."},
+      {id:"d",vrai:false,texte:"L'anse de Henlé est entièrement située dans le cortex.",explication:"L'anse de Henlé descend dans la médullaire, plus ou moins profondément selon le type de néphron (cortical ou juxtamédullaire)."},
+      {id:"e",vrai:false,texte:"Le tube collecteur fait partie du néphron au sens strict.",explication:"Le tube collecteur n'appartient pas au néphron au sens strict : son origine embryologique est différente (bourgeon urétéral)."}]},
+    {id:"d2",niveau:1,type:"QCM",enonce:"Concernant le débit de filtration glomérulaire (DFG), quelles sont les propositions exactes ?",a_retenir:"DFG ≈ 120 mL/min/1,73 m², soit environ 180 L/jour ; référence = clairance de l'inuline ; la créatinine plasmatique augmente quand le DFG baisse.",propositions:[
+      {id:"a",vrai:true,texte:"Chez l'adulte jeune, le DFG est d'environ 120 mL/min/1,73 m².",explication:"C'est la valeur normale de référence ; elle diminue avec l'âge."},
+      {id:"b",vrai:true,texte:"La créatinine plasmatique augmente quand le DFG diminue.",explication:"La créatinine est éliminée par filtration : si le DFG baisse, elle s'accumule dans le plasma."},
+      {id:"c",vrai:true,texte:"La clairance de l'inuline est la méthode de référence pour mesurer le DFG.",explication:"L'inuline est librement filtrée, ni réabsorbée ni sécrétée : sa clairance est égale au DFG."},
+      {id:"d",vrai:false,texte:"Le volume filtré par les glomérules est d'environ 180 mL par jour.",explication:"Unité modifiée : c'est environ 180 L par jour (120 mL/min × 1 440 min)."},
+      {id:"e",vrai:false,texte:"La créatinine est massivement réabsorbée par le tubule proximal.",explication:"La créatinine n'est pas réabsorbée : elle est filtrée et un peu sécrétée par le tubule."}]},
+    {id:"d3",niveau:2,type:"QCM",enonce:"Concernant la réabsorption tubulaire, quelles sont les propositions exactes ?",a_retenir:"Tube proximal : environ 2/3 du sodium et quasi tout le glucose ; branche ascendante large : NaCl sans eau (NKCC2, cible du furosémide) ; aldostérone : néphron distal.",propositions:[
+      {id:"a",vrai:true,texte:"Le tube contourné proximal réabsorbe environ les deux tiers du sodium filtré.",explication:"Environ 65 % du sodium et de l'eau filtrés sont réabsorbés dans le tube proximal."},
+      {id:"b",vrai:true,texte:"Le glucose filtré est réabsorbé essentiellement dans le tube contourné proximal.",explication:"Par les cotransporteurs SGLT ; au-delà du seuil rénal (glycémie d'environ 10 mmol/L), une glycosurie apparaît."},
+      {id:"c",vrai:true,texte:"La branche ascendante large de l'anse de Henlé est imperméable à l'eau.",explication:"Elle réabsorbe du NaCl sans eau : c'est le segment de dilution."},
+      {id:"d",vrai:true,texte:"Le cotransporteur Na⁺-K⁺-2Cl⁻ (NKCC2) de la branche ascendante large est la cible des diurétiques de l'anse.",explication:"Le furosémide inhibe NKCC2."},
+      {id:"e",vrai:false,texte:"L'aldostérone agit principalement sur le tube contourné proximal.",explication:"Inversion de segment : l'aldostérone agit sur le néphron distal (tube contourné distal terminal et tube collecteur)."}]},
+    {id:"d4",niveau:2,type:"QRU",enonce:"Concernant l'hormone antidiurétique (ADH), quelle est la proposition exacte ?",a_retenir:"ADH : synthèse hypothalamique, libération posthypophysaire ; stimulée par une hausse de l'osmolalité ; récepteurs V2, puis aquaporines 2 : urines concentrées.",propositions:[
+      {id:"a",vrai:true,texte:"Elle augmente la réabsorption d'eau dans le tube collecteur en faisant insérer des aquaporines 2 dans la membrane apicale.",explication:"C'est son mécanisme d'action principal, via les récepteurs V2."},
+      {id:"b",vrai:false,texte:"Elle est sécrétée par l'antéhypophyse.",explication:"Elle est synthétisée par l'hypothalamus (noyaux supraoptiques et paraventriculaires) et libérée par la posthypophyse."},
+      {id:"c",vrai:false,texte:"Sa sécrétion est stimulée par une baisse de l'osmolalité plasmatique.",explication:"Inversion : c'est une hausse de l'osmolalité plasmatique (ou une hypovolémie) qui stimule sa sécrétion."},
+      {id:"d",vrai:false,texte:"Elle agit sur le tube collecteur par l'intermédiaire des récepteurs V1.",explication:"Elle agit sur le tube collecteur via les récepteurs V2 ; les récepteurs V1 sont vasculaires."},
+      {id:"e",vrai:false,texte:"Elle augmente le volume des urines.",explication:"Elle diminue la diurèse et concentre les urines : c'est une hormone antidiurétique."}]},
+    {id:"d5",niveau:3,type:"QCM",enonce:"Un patient a une créatinine urinaire de 10 mmol/L, une créatinine plasmatique de 100 µmol/L et un débit urinaire de 1 mL/min. Quelles sont les propositions exactes ?",a_retenir:"Clairance = U × V / P avec U et P dans la même unité ; la créatinine est un peu sécrétée, donc sa clairance surestime légèrement le DFG.",propositions:[
+      {id:"a",vrai:true,texte:"La clairance de la créatinine est de 100 mL/min.",explication:"C = U × V / P = (10 000 µmol/L × 1 mL/min) / 100 µmol/L = 100 mL/min, après conversion des mmol en µmol."},
+      {id:"b",vrai:false,texte:"La clairance de la créatinine est de 10 mL/min.",explication:"Erreur d'unités : il faut convertir 10 mmol/L en 10 000 µmol/L. Le bon résultat est 100 mL/min."},
+      {id:"c",vrai:true,texte:"La clairance de la créatinine surestime légèrement le DFG.",explication:"La créatinine est un peu sécrétée par le tubule : il en passe plus dans les urines que ce qui est filtré."},
+      {id:"d",vrai:false,texte:"La clairance de la créatinine est de 1 000 mL/min.",explication:"Résultat impossible physiologiquement ; le bon calcul donne 100 mL/min."},
+      {id:"e",vrai:false,texte:"La clairance de la créatinine sous-estime le DFG car la créatinine est réabsorbée.",explication:"Inversion : la créatinine n'est pas réabsorbée mais un peu sécrétée, donc sa clairance surestime le DFG."}]},
+    {id:"d6",niveau:3,type:"QCM",enonce:"Concernant le système rénine-angiotensine-aldostérone, quelles sont les propositions exactes ?",a_retenir:"Baisse de perfusion rénale → rénine (artériole afférente) → angiotensine I → (enzyme de conversion) angiotensine II → aldostérone (zone glomérulée) → réabsorption de Na⁺ et sécrétion de K⁺.",propositions:[
+      {id:"a",vrai:true,texte:"La rénine est sécrétée par les cellules juxtaglomérulaires de l'artériole afférente.",explication:"Ces cellules font partie de l'appareil juxtaglomérulaire."},
+      {id:"b",vrai:true,texte:"Une baisse de la pression de perfusion rénale stimule la sécrétion de rénine.",explication:"Les barorécepteurs de l'artériole afférente détectent la baisse de pression."},
+      {id:"c",vrai:true,texte:"L'enzyme de conversion transforme l'angiotensine I en angiotensine II.",explication:"Elle est surtout présente sur l'endothélium pulmonaire ; c'est la cible des IEC."},
+      {id:"d",vrai:true,texte:"L'angiotensine II stimule la sécrétion d'aldostérone par la zone glomérulée de la corticosurrénale.",explication:"La zone glomérulée produit les minéralocorticoïdes."},
+      {id:"e",vrai:true,texte:"L'aldostérone augmente la réabsorption de sodium et la sécrétion de potassium dans le tube collecteur.",explication:"Via les canaux ENaC et ROMK des cellules principales ; d'où le risque d'hypokaliémie en cas d'hyperaldostéronisme."}]}
+  ]
+};
+
+// ---------- État ----------
+const S = {
+  vue:"accueil", init:false, chargement:true,
+  store:null, progStore:null, sample:null, imagesOK:false, maxImages:0, imageTypes:[], canWrite:null, uid:null,
+  cours:[], progres:{}, questionsCache:{}, coursId:null, mode:"entrainement",
+  quiz:null, gen:null, ajout:null, confirmSuppr:null, toutVoir:false, erreurPage:null, sauvegarde:null
+};
+S.ajout = nouvelAjout();
+function nouvelAjout(){ return {fichiers:[], texte:"", matiere:"", titre:""}; }
+
+// ---------- Outils ----------
+const $app = document.getElementById("app");
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs){
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k.slice(0,2) === "on" && typeof v === "function") el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else if (k === "value") el.value = v;
+    else el.setAttribute(k, v === true ? "" : String(v));
+  }
+  const add = (k) => { if (k == null || k === false) return; if (Array.isArray(k)) return k.forEach(add); el.append(k instanceof Node ? k : document.createTextNode(String(k))); };
+  kids.forEach(add);
+  return el;
+}
+function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const round2 = (x) => Math.round(x * 100) / 100;
+const fmt = (x) => Number(x).toLocaleString("fr-FR", {maximumFractionDigits:2});
+const sur20 = (p, m) => m ? (p / m * 20).toLocaleString("fr-FR", {minimumFractionDigits:1, maximumFractionDigits:1}) : "–";
+const pluriel = (n, s, p) => n > 1 ? p : s;
+const newId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const newQid = () => "q" + Math.random().toString(36).slice(2, 10);
+const bytes = (s) => new TextEncoder().encode(s).length;
+function jour(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+const jPlus = (debut, d = new Date()) => Math.round((jour(d) - jour(debut)) / 86400000);
+function ajouterJours(debut, n){ const x = jour(debut); x.setDate(x.getDate() + n); return x; }
+const fmtDate = (d) => new Date(d).toLocaleDateString("fr-FR", {day:"numeric", month:"short"});
+const taille = (n) => n > 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " Mo" : Math.max(1, Math.round(n / 1024)) + " Ko";
+const reduit = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Notation : 0 faute = 1 ; 1 faute = 0,5 ; 2 fautes = 0,2 ; 3 et plus = 0. Une faute = une case cochée à tort ou une bonne réponse oubliée.
+const points = (f) => f === 0 ? 1 : f === 1 ? 0.5 : f === 2 ? 0.2 : 0;
+function fautes(q, choix){ let f = 0; for (const p of q.propositions) if (choix.includes(p.id) !== !!p.vrai) f++; return f; }
+
+async function retry1(fn){
+  try { return await fn(); }
+  catch (e){ if (e && e.code === "unavailable"){ await new Promise(r => setTimeout(r, 400 + Math.random() * 900)); return fn(); } throw e; }
+}
+const chaines = new Map();
+function serial(cle, fn){ const prev = chaines.get(cle) || Promise.resolve(); const next = prev.catch(() => {}).then(fn); chaines.set(cle, next); return next; }
+
+// ---------- Stockage ----------
+function lsRead(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
+function lsWrite(o){ try { localStorage.setItem(LS_KEY, JSON.stringify(o)); return true; } catch { return false; } }
+
+const LocalStore = {
+  kind:"local", _fns:new Set(),
+  _all(){ const d = lsRead(); d.cours = d.cours || {}; d.questions = d.questions || {}; d.sources = d.sources || {}; return d; },
+  _save(d){ if (!lsWrite(d)) throw {code:"local"}; this._fns.forEach(f => f()); },
+  subscribeCours(fn){ const run = () => fn(Object.entries(this._all().cours).map(([id, c]) => Object.assign({id}, c))); this._fns.add(run); run(); return () => this._fns.delete(run); },
+  async setCours(id, m){ const d = this._all(); d.cours[id] = m; this._save(d); },
+  async updateCours(id, patch){ const d = this._all(); d.cours[id] = Object.assign({}, d.cours[id], patch); this._save(d); },
+  async getQuestions(id){ return this._all().questions[id] || []; },
+  async setQuestions(id, qs){ const d = this._all(); d.questions[id] = qs; this._save(d); },
+  async getSource(id){ return this._all().sources[id] || null; },
+  async setSource(id, t){ const d = this._all(); d.sources[id] = t; this._save(d); },
+  async deleteCours(id){ const d = this._all(); delete d.cours[id]; delete d.questions[id]; delete d.sources[id]; this._save(d); }
+};
+const LocalProg = {
+  kind:"local", _fns:new Set(),
+  subscribeProgres(fn){ const run = () => fn(lsRead().progres || {}); this._fns.add(run); run(); return () => this._fns.delete(run); },
+  async setProgres(id, p){ const d = lsRead(); d.progres = d.progres || {}; d.progres[id] = p; if (!lsWrite(d)) throw {code:"local"}; this._fns.forEach(f => f()); },
+  async deleteProgres(id){ const d = lsRead(); if (d.progres) delete d.progres[id]; lsWrite(d); this._fns.forEach(f => f()); }
+};
+function makeDbStore(db){
+  const set = (p, data) => serial(p, () => retry1(() => db.doc(p).set(data)));
+  return {
+    kind:"db",
+    subscribeCours(fn, onErr){ return db.collection("cours").onSnapshot(s => fn(s.docs.map(d => Object.assign({id:d.id}, d.data()))), onErr); },
+    setCours:(id, m) => set("cours/" + id, m),
+    updateCours:(id, patch) => serial("cours/" + id, () => retry1(() => db.doc("cours/" + id).update(patch))),
+    async getQuestions(id){ const s = await retry1(() => db.doc("questions/" + id).get()); return s.exists ? (s.data().questions || []) : []; },
+    setQuestions:(id, qs) => set("questions/" + id, {questions:qs}),
+    async getSource(id){ const s = await retry1(() => db.doc("sources/" + id).get()); return s.exists ? (s.data().texte || null) : null; },
+    setSource:(id, t) => set("sources/" + id, {texte:t}),
+    async deleteCours(id){ for (const p of ["cours/", "questions/", "sources/"]) await serial(p + id, () => retry1(() => db.doc(p + id).delete())); }
+  };
+}
+function makeDbProg(db, uid){
+  const col = "data/users/" + uid;
+  return {
+    kind:"db",
+    subscribeProgres(fn){ return db.collection(col).onSnapshot(s => { const o = {}; for (const d of s.docs) o[d.id] = d.data(); fn(o); }, () => {}); },
+    setProgres:(id, p) => serial(col + "/" + id, () => retry1(() => db.doc(col + "/" + id).set(p))),
+    deleteProgres:(id) => serial(col + "/" + id, () => retry1(() => db.doc(col + "/" + id).delete()))
+  };
+}
+
+// ---------- Démarrage ----------
+async function init(){
+  const cl = window.claude;
+  let db = null, user = null, sample = null;
+  if (cl && typeof cl.use === "function"){
+    [db, user, sample] = await Promise.all(["db", "user", "sample"].map(n => cl.use(n).catch(() => null)));
+  }
+  S.uid = user ? await user.id().catch(() => null) : null;
+  S.canWrite = user ? await user.can("data.write").catch(() => null) : null;
+  S.store = db ? makeDbStore(db) : LocalStore;
+  S.progStore = db && S.uid ? makeDbProg(db, S.uid) : LocalProg;
+  S.sample = sample;
+  if (sample){
+    const lim = await sample.limits().catch(() => null);
+    S.imagesOK = !!(lim && lim.images);
+    S.maxImages = lim && lim.images ? lim.images.maxCount : 0;
+    S.imageTypes = lim && lim.images ? lim.images.mediaTypes : [];
+  }
+  S.init = true;
+  S.unsubC = S.store.subscribeCours(list => { S.cours = list; S.chargement = false; rafraichir(); },
+    () => { S.chargement = false; S.erreurPage = "Tes cours n'ont pas pu être chargés. Recharge la page."; rafraichir(); });
+  S.unsubP = S.progStore.subscribeProgres(p => { S.progres = p; rafraichir(); });
+  render();
+}
+function rafraichir(){ if (S.vue === "accueil" || S.vue === "cours") render(); }
+
+// ---------- Rendu ----------
+const VUES = {accueil:vueAccueil, cours:vueCours, ajout:vueAjout, generation:vueGeneration, quiz:vueQuiz, fin:vueFin};
+function render(){
+  const k = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
+  $app.replaceChildren((VUES[S.vue] || vueAccueil)());
+  if (k){ const el = $app.querySelector('[data-k="' + CSS.escape(k) + '"]'); if (el) el.focus({preventScroll:true}); }
+}
+function aller(vue, extra){ Object.assign(S, extra || {}); S.erreurPage = null; S.vue = vue; render(); window.scrollTo(0, 0); }
+const lienRetour = (label, fn) => h("button", {class:"lien retour", type:"button", onclick:fn}, "← " + label);
+const pips = (n) => h("span", {class:"pips", "aria-hidden":"true"}, [1,2,3].map(i => h("i", {class: i <= n ? "on" : null})));
+
+function jalons(c){
+  const t = ((S.progres[c.id] || {}).tentatives || []).map(x => jPlus(c.creeLe, x.date));
+  const auj = jPlus(c.creeLe);
+  return JALONS.map((m, i) => {
+    const suiv = JALONS[i + 1] !== undefined ? JALONS[i + 1] : Infinity;
+    const fait = t.some(d => d >= m - 1 && d < suiv - 1);
+    const etat = fait ? "fait" : auj >= suiv - 1 ? "manque" : auj >= m ? "du" : "avenir";
+    return {m, etat, date:ajouterJours(c.creeLe, m)};
+  });
+}
+function libelleJalon(j){ return j.etat === "fait" ? "fait" : j.etat === "du" ? "à faire" : j.etat === "manque" ? "passé" : "le " + fmtDate(j.date); }
+
+// ----- Accueil -----
+function vueAccueil(){
+  const cours = S.cours.slice().sort((a, b) => String(b.creeLe || "").localeCompare(String(a.creeLe || "")));
+  const dus = [];
+  for (const c of cours) for (const j of jalons(c)) if (j.etat === "du") dus.push({c, j});
+  return h("div", {class:"vue"},
+    h("header", {class:"masthead"},
+      h("p", {class:"eyebrow"}, "Médecine · 3e année"),
+      h("h1", {}, "QCM", h("span", {class:"jbox"}, "J7"), h("span", {class:"jbox"}, "J14"), h("span", {class:"jbox"}, "J28")),
+      h("p", {class:"lede"}, "Chaque cours devient une série de QCM en trois niveaux, à refaire à J7, J14 et J28. Chaque proposition est corrigée : tu révises sans rouvrir le cours.")),
+    S.erreurPage ? h("p", {class:"alerte"}, S.erreurPage) : null,
+    blocAjout(),
+    dus.length ? h("section", {class:"sec"}, h("h2", {}, "À réviser aujourd'hui", h("span", {class:"compte"}, String(dus.length))),
+      h("ul", {class:"liste"}, dus.map(({c, j}) => ligneCours(c, "J" + j.m + " prévu le " + fmtDate(j.date) + " · " + (c.matiere || ""))))) : null,
+    S.chargement ? h("p", {class:"muted"}, "Chargement de tes cours…") : null,
+    sectionsMatieres(cours),
+    (!S.chargement && !cours.length) ? h("section", {class:"sec"}, h("h2", {}, "Pour essayer"),
+      h("p", {class:"muted"}, "Aucun cours pour l'instant. Cette démo de 6 questions montre le fonctionnement ; elle n'est pas tirée de ton cours."),
+      h("ul", {class:"liste", "aria-label":"Démo"}, ligneCours(DEMO))) : null,
+    pied());
+}
+function blocAjout(){
+  if (S.canWrite === false) return h("p", {class:"note"}, "Ton accès à cette page est en lecture seule. Pour ajouter des cours, il faut l'accès « Éditeur ».");
+  if (S.init && S.sample) return h("div", {class:"ajout-cta"},
+    h("button", {class:"btn primaire", type:"button", onclick:() => aller("ajout")}, "+ Ajouter un cours"),
+    h("span", {class:"muted petit"}, "PDF, Word, PowerPoint, photos ou texte copié"));
+  if (S.init) return h("p", {class:"note"}, "L'ajout de cours fonctionne quand cette page est ouverte sur claude.ai, connectée à ton compte Claude.");
+  return null;
+}
+function sectionsMatieres(cours){
+  const groupes = new Map();
+  for (const c of cours){ const m = MATIERES.includes(c.matiere) ? c.matiere : "Autre"; if (!groupes.has(m)) groupes.set(m, []); groupes.get(m).push(c); }
+  return MATIERES.filter(m => groupes.has(m)).map(m => h("section", {class:"sec"},
+    h("h2", {}, m, h("span", {class:"compte"}, String(groupes.get(m).length))),
+    h("ul", {class:"liste"}, groupes.get(m).map(c => ligneCours(c)))));
+}
+function ligneCours(c, note){
+  const t = (S.progres[c.id] || {}).tentatives || [];
+  const der = t[t.length - 1];
+  const enCreation = S.gen && !S.gen.fini && S.gen.coursId === c.id;
+  let meta = note || (c.demo ? "6 questions d'exemple" : "Ajouté le " + fmtDate(c.creeLe) + " · J+" + Math.max(0, jPlus(c.creeLe)));
+  if (enCreation) meta += " · création en cours";
+  else if (!c.demo && c.statut && c.statut !== "pret") meta += " · incomplet";
+  return h("li", {}, h("button", {class:"ligne", type:"button", onclick:() => ouvrirCours(c.id)},
+    h("span", {class:"ligne-main"}, h("span", {class:"ligne-titre"}, c.titre), h("span", {class:"ligne-meta"}, meta)),
+    h("span", {class:"ligne-side"},
+      c.demo ? null : h("span", {class:"jalons"}, jalons(c).map(j => h("span", {class:"jal " + j.etat, title:"J" + j.m + " : " + libelleJalon(j)}, "J" + j.m))),
+      der ? h("span", {class:"score"}, sur20(der.points, der.max), h("small", {}, "/20")) : h("span", {class:"score vide"}, "jamais fait"))));
+}
+function pied(){
+  return h("footer", {class:"pied"},
+    S.init ? h("p", {}, S.store && S.store.kind === "db"
+      ? "Cours et scores enregistrés en ligne : tu les retrouves sur tous tes appareils connectés à Claude."
+      : "Cours et scores enregistrés sur cet appareil uniquement.") : null,
+    S.cours.length ? h("button", {class:"lien", type:"button", onclick:() => ouvrirCours("demo")}, "Ouvrir la démo (6 questions)") : null,
+    h("p", {class:"petit"}, "Notation : tout juste = 1 point · 1 faute = 0,5 · 2 fautes = 0,2 · 3 fautes ou plus = 0. Une faute = une case cochée à tort ou une bonne réponse oubliée."));
+}
+
+// ----- Cours -----
+const coursCourant = () => S.coursId === "demo" ? DEMO : S.cours.find(c => c.id === S.coursId);
+const questionsDe = (id) => id === "demo" ? DEMO.questions : S.questionsCache[id];
+async function ouvrirCours(id){
+  aller("cours", {coursId:id, confirmSuppr:null});
+  if (id !== "demo" && !S.questionsCache[id]){
+    try { S.questionsCache[id] = await S.store.getQuestions(id); }
+    catch { S.erreurPage = "Les questions n'ont pas pu être chargées. Recharge la page."; }
+    if (S.vue === "cours" && S.coursId === id) render();
+  }
+}
+function vueCours(){
+  const c = coursCourant();
+  if (!c) return h("div", {class:"vue"}, lienRetour("Mes cours", () => aller("accueil")), h("p", {class:"note"}, "Ce cours n'existe plus."));
+  const qs = questionsDe(c.id);
+  const prog = S.progres[c.id] || {};
+  const dern = prog.dernier || {};
+  const nb = (n) => qs ? qs.filter(q => q.niveau === n).length : ((c.parNiveau || {})[n] || 0);
+  const nErr = qs ? qs.filter(q => q.id in dern && dern[q.id] < 1).length : 0;
+  const total = qs ? qs.length : (c.nbQuestions || 0);
+  const nQru = qs ? qs.filter(q => q.type === "QRU").length : 0;
+  const genActive = S.gen && !S.gen.fini && S.gen.coursId === c.id;
+  const incomplet = !c.demo && c.statut !== "pret" && !genActive;
+  const mode = S.mode;
+  const depart = (portee, titre, sous, off, primaire) => h("button", {class:"btn depart" + (primaire ? " primaire" : ""), type:"button", disabled:(off || !qs || !qs.length) || null, onclick:() => demarrerQuiz(c, qs, portee)}, h("span", {}, titre), h("small", {}, sous));
+  return h("div", {class:"vue"},
+    lienRetour("Mes cours", () => aller("accueil")),
+    h("header", {class:"cours-tete"},
+      h("p", {class:"eyebrow"}, c.matiere || "Cours"),
+      h("h1", {class:"h-page"}, c.titre),
+      c.demo ? h("p", {class:"muted"}, "Questions d'exemple pour tester la page : elles ne viennent pas de ton cours.")
+             : h("p", {class:"muted"}, "Ajouté le " + fmtDate(c.creeLe) + " · aujourd'hui J+" + Math.max(0, jPlus(c.creeLe))
+                 + (qs ? " · " + total + " questions (" + nQru + " QRU, " + (total - nQru) + " QCM)" : "")),
+      c.demo ? null : h("div", {class:"jalons grand"}, jalons(c).map(j => h("span", {class:"jal " + j.etat}, "J" + j.m, h("small", {}, " " + libelleJalon(j)))))),
+    S.erreurPage ? h("p", {class:"alerte"}, S.erreurPage) : null,
+    genActive ? h("div", {class:"note"}, h("p", {}, "Création des questions en cours."), h("button", {class:"lien", type:"button", onclick:() => aller("generation")}, "Voir la progression")) : null,
+    incomplet ? h("div", {class:"note"},
+      h("p", {}, total + " " + pluriel(total, "question prête", "questions prêtes") + ". Une partie des questions n'a pas pu être créée."),
+      S.sample ? h("button", {class:"btn", type:"button", onclick:() => completer(c)}, "Compléter les questions manquantes") : null) : null,
+    h("section", {class:"sec serie"},
+      h("h2", {}, "Lancer une série"),
+      h("div", {class:"seg", role:"group", "aria-label":"Mode"},
+        h("button", {type:"button", "aria-pressed":String(mode === "entrainement"), onclick:() => { S.mode = "entrainement"; render(); }}, "Entraînement"),
+        h("button", {type:"button", "aria-pressed":String(mode === "examen"), onclick:() => { S.mode = "examen"; render(); }}, "Examen")),
+      h("p", {class:"muted petit"}, mode === "entrainement" ? "Correction détaillée après chaque question." : "Aucune correction pendant la série : tout est corrigé à la fin, comme le jour de l'examen."),
+      !qs ? h("p", {class:"muted"}, "Chargement des questions…") :
+      h("div", {class:"departs"},
+        depart("tout", "Tout le cours", total + " questions, du facile au difficile", false, true),
+        [1,2,3].map(n => depart(String(n), NIVEAUX[n], nb(n) + " " + pluriel(nb(n), "question", "questions"), !nb(n))),
+        depart("erreurs", "Mes erreurs", nErr ? nErr + " à refaire" : "aucune pour l'instant", !nErr))),
+    c.notions && c.notions.length ? h("details", {class:"notions"}, h("summary", {}, "Notions couvertes (" + c.notions.length + ")"), h("ul", {}, c.notions.map(n => h("li", {}, n)))) : null,
+    historique(c, prog),
+    c.demo ? null : suppression(c));
+}
+function historique(c, prog){
+  const t = (prog.tentatives || []).slice().reverse();
+  return h("section", {class:"sec"}, h("h2", {}, "Historique"),
+    !t.length ? h("p", {class:"muted"}, "Pas encore de série terminée sur ce cours.") :
+    h("div", {class:"table-wrap"}, h("table", {},
+      h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", {}, "Jour"), h("th", {}, "Série"), h("th", {}, "Mode"), h("th", {class:"num"}, "Points"), h("th", {class:"num"}, "/20"))),
+      h("tbody", {}, t.map(x => h("tr", {},
+        h("td", {}, fmtDate(x.date)), h("td", {}, c.demo ? "–" : "J+" + jPlus(c.creeLe, x.date)),
+        h("td", {}, PORTEES[x.portee] || x.portee), h("td", {}, x.mode === "examen" ? "Examen" : "Entraînement"),
+        h("td", {class:"num"}, fmt(x.points) + " / " + x.max), h("td", {class:"num"}, sur20(x.points, x.max))))))));
+}
+function suppression(c){
+  if (S.confirmSuppr !== c.id) return h("div", {class:"zone-suppr"}, h("button", {class:"lien danger", type:"button", onclick:() => { S.confirmSuppr = c.id; render(); }}, "Supprimer ce cours"));
+  return h("div", {class:"note"},
+    h("p", {}, "Supprimer ce cours, ses questions et ton historique de scores sur ce cours ?"),
+    h("div", {class:"actions"},
+      h("button", {class:"btn danger", type:"button", onclick:() => supprimer(c)}, "Supprimer"),
+      h("button", {class:"btn", type:"button", onclick:() => { S.confirmSuppr = null; render(); }}, "Annuler")));
+}
+async function supprimer(c){
+  try {
+    await S.store.deleteCours(c.id);
+    try { await S.progStore.deleteProgres(c.id); } catch {}
+    delete S.questionsCache[c.id];
+    aller("accueil", {confirmSuppr:null});
+  } catch { S.erreurPage = "La suppression n'a pas abouti. Vérifie ta connexion et réessaie."; render(); }
+}
+
+// ----- Quiz -----
+function demarrerQuiz(c, qs, portee){
+  const dern = (S.progres[c.id] || {}).dernier || {};
+  const pool = portee === "tout" ? qs : portee === "erreurs" ? qs.filter(q => q.id in dern && dern[q.id] < 1) : qs.filter(q => q.niveau === Number(portee));
+  if (!pool.length) return;
+  const ordre = [1,2,3].flatMap(n => shuffle(pool.filter(q => q.niveau === n)));
+  S.quiz = {coursId:c.id, titre:c.titre, mode:S.mode, portee, i:0, enregistre:false,
+    items:ordre.map(q => ({q, ordre:shuffle(q.propositions.map(p => p.id)), choix:[], valide:false, fautes:0, points:0}))};
+  aller("quiz", {toutVoir:false, sauvegarde:null});
+}
+function basculer(pid){
+  const it = S.quiz.items[S.quiz.i];
+  if (it.valide) return;
+  if (it.q.type === "QRU") it.choix = it.choix[0] === pid ? [] : [pid];
+  else it.choix = it.choix.includes(pid) ? it.choix.filter(x => x !== pid) : it.choix.concat(pid);
+  render();
+}
+function valider(){
+  const Q = S.quiz, it = Q.items[Q.i];
+  if (it.valide || !it.choix.length) return;
+  it.fautes = fautes(it.q, it.choix); it.points = points(it.fautes); it.valide = true;
+  if (Q.mode === "examen") return suivante();
+  render();
+}
+function suivante(){
+  const Q = S.quiz;
+  if (Q.i < Q.items.length - 1){ Q.i++; render(); window.scrollTo(0, 0); }
+  else terminer();
+}
+function terminer(){
+  const Q = S.quiz;
+  if (!Q.items.some(x => x.valide)) return ouvrirCours(Q.coursId);
+  aller("fin");
+  enregistrer(Q);
+}
+function actionPrincipale(){ const it = S.quiz.items[S.quiz.i]; if (!it.valide) valider(); else suivante(); }
+async function enregistrer(Q){
+  const rep = Q.items.filter(x => x.valide);
+  if (!rep.length || Q.enregistre) return;
+  Q.enregistre = true;
+  const ancien = S.progres[Q.coursId] || {};
+  const p = {tentatives:(ancien.tentatives || []).slice(-199), dernier:Object.assign({}, ancien.dernier || {})};
+  const par = {};
+  for (const x of rep){ const n = String(x.q.niveau); par[n] = par[n] || {p:0, m:0}; par[n].p = round2(par[n].p + x.points); par[n].m++; p.dernier[x.q.id] = x.points; }
+  p.tentatives.push({date:new Date().toISOString(), mode:Q.mode, portee:Q.portee, points:round2(rep.reduce((s, x) => s + x.points, 0)), max:rep.length, parNiveau:par});
+  S.progres = Object.assign({}, S.progres, {[Q.coursId]:p});
+  try { await S.progStore.setProgres(Q.coursId, p); S.sauvegarde = "ok"; }
+  catch {
+    try {
+      await LocalProg.setProgres(Q.coursId, p);
+      if (S.progStore !== LocalProg){ S.progStore = LocalProg; if (S.unsubP) S.unsubP(); S.unsubP = LocalProg.subscribeProgres(x => { S.progres = x; rafraichir(); }); }
+      S.sauvegarde = "local";
+    } catch { S.sauvegarde = "echec"; }
+  }
+  if (S.vue === "fin") render();
+}
+const ETATS = {juste:"Bien cochée.", oubliee:"Oubliée : il fallait la cocher.", atort:"Cochée à tort.", neutre:"Bien laissée."};
+const etatDe = (p, sel) => p.vrai ? (sel ? "juste" : "oubliee") : (sel ? "atort" : "neutre");
+function explication(p, etat){
+  return h("div", {class:"expl"},
+    h("span", {class:"verdict " + (p.vrai ? "v" : "f")}, p.vrai ? "Vrai" : "Faux"),
+    h("span", {class:"etat-txt " + etat}, ETATS[etat]), " ", p.explication || "");
+}
+function ligneResultat(it){
+  const f = it.fautes;
+  return h("div", {class:"resultat r" + Math.min(f, 3)},
+    h("strong", {}, f === 0 ? "Tout juste" : f + " " + pluriel(f, "faute", "fautes")),
+    h("span", {}, fmt(it.points) + " point"));
+}
+function retenir(q){ return q.a_retenir ? h("div", {class:"retenir"}, h("p", {class:"eyebrow"}, "À retenir"), h("p", {}, q.a_retenir)) : null; }
+function vueQuiz(){
+  const Q = S.quiz, it = Q.items[Q.i], q = it.q, corr = it.valide && Q.mode === "entrainement";
+  const faits = Q.items.filter(x => x.valide);
+  const pts = round2(faits.reduce((s, x) => s + x.points, 0));
+  const dernier = Q.i === Q.items.length - 1;
+  const barre = h("i"); barre.style.width = (Q.i / Q.items.length * 100) + "%";
+  const props = it.ordre.map((pid, k) => {
+    const p = q.propositions.find(x => x.id === pid), sel = it.choix.includes(pid);
+    const etat = corr ? etatDe(p, sel) : "";
+    return h("li", {class:"prop" + (sel ? " sel" : "") + (etat ? " " + etat : "")},
+      h("button", {type:"button", class:"prop-btn", role:q.type === "QRU" ? "radio" : "checkbox", "aria-checked":String(sel), "aria-disabled":it.valide ? "true" : null, "data-k":"p" + k, onclick:() => basculer(pid)},
+        h("span", {class:"box", "aria-hidden":"true"}, LETTRES[k]), h("span", {class:"prop-txt"}, p.texte)),
+      corr ? explication(p, etat) : null);
+  });
+  return h("div", {class:"vue"},
+    h("div", {class:"q-top"},
+      h("button", {class:"lien", type:"button", onclick:terminer}, faits.length ? "Terminer maintenant" : "Quitter"),
+      h("span", {class:"q-count"}, (Q.i + 1) + " / " + Q.items.length),
+      h("span", {}, Q.mode === "examen" ? "Mode examen" : faits.length ? fmt(pts) + " / " + faits.length + " pt" : "Entraînement")),
+    h("div", {class:"progress"}, barre),
+    h("div", {class:"q-meta"}, pips(q.niveau), h("span", {}, NIVEAUX[q.niveau]),
+      h("span", {class:"tag " + (q.type === "QRU" ? "qru" : "qcm")}, q.type === "QRU" ? "QRU · une seule réponse" : "QCM · plusieurs réponses")),
+    h("h2", {class:"enonce"}, q.enonce),
+    corr ? ligneResultat(it) : null,
+    h("ul", {class:"props" + (q.type === "QRU" ? " qru" : ""), role:q.type === "QRU" ? "radiogroup" : "group", "aria-label":"Propositions"}, props),
+    corr ? retenir(q) : null,
+    h("div", {class:"barre-action"},
+      !it.valide
+        ? h("button", {class:"btn primaire", type:"button", "data-k":"valider", disabled:!it.choix.length || null, onclick:valider}, Q.mode === "examen" ? (dernier ? "Valider et terminer" : "Valider et continuer") : "Valider")
+        : h("button", {class:"btn primaire", type:"button", "data-k":"suivante", onclick:suivante}, dernier ? "Voir mon résultat" : "Question suivante"),
+      h("span", {class:"astuce"}, "Clavier : touches A à E pour cocher, Entrée pour valider")));
+}
+document.addEventListener("keydown", e => {
+  if (S.vue !== "quiz" || e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target, tag = t && t.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  const it = S.quiz.items[S.quiz.i];
+  const idx = e.key.length === 1 ? "abcde".indexOf(e.key.toLowerCase()) : -1;
+  if (idx >= 0 && !it.valide){ e.preventDefault(); basculer(it.ordre[idx]); }
+  else if (e.key === "Enter" && tag !== "BUTTON"){ e.preventDefault(); actionPrincipale(); }
+});
+
+// ----- Résultat -----
+function carteCorrection(x){
+  const q = x.q;
+  return h("article", {class:"carte-corr"},
+    h("div", {class:"q-meta"}, pips(q.niveau), h("span", {}, NIVEAUX[q.niveau]), h("span", {class:"tag " + (q.type === "QRU" ? "qru" : "qcm")}, q.type)),
+    h("h3", {class:"enonce petit"}, q.enonce),
+    h("ul", {class:"props" + (q.type === "QRU" ? " qru" : "")}, x.ordre.map((pid, k) => {
+      const p = q.propositions.find(y => y.id === pid), etat = etatDe(p, x.choix.includes(pid));
+      return h("li", {class:"prop " + etat},
+        h("div", {class:"prop-btn statique"}, h("span", {class:"box", "aria-hidden":"true"}, LETTRES[k]), h("span", {class:"prop-txt"}, p.texte)),
+        explication(p, etat));
+    })),
+    ligneResultat(x), retenir(q));
+}
+function vueFin(){
+  const Q = S.quiz, rep = Q.items.filter(x => x.valide);
+  const tot = round2(rep.reduce((s, x) => s + x.points, 0)), max = rep.length;
+  const par = [1,2,3].map(n => { const xs = rep.filter(x => x.q.niveau === n); return {n, m:xs.length, p:round2(xs.reduce((s, x) => s + x.points, 0))}; }).filter(r => r.m);
+  const dist = [0,0,0,0]; rep.forEach(x => dist[Math.min(x.fautes, 3)]++);
+  const erreurs = rep.filter(x => x.points < 1);
+  const liste = (Q.mode === "examen" || S.toutVoir) ? rep : erreurs;
+  const c = Q.coursId === "demo" ? DEMO : S.cours.find(y => y.id === Q.coursId);
+  const qs = questionsDe(Q.coursId);
+  const dern = (S.progres[Q.coursId] || {}).dernier || {};
+  const nErr = qs ? qs.filter(q => q.id in dern && dern[q.id] < 1).length : 0;
+  const sauve = {ok:"Score enregistré.", local:"Score enregistré sur cet appareil.", echec:"Le score n'a pas pu être enregistré."}[S.sauvegarde] || "";
+  return h("div", {class:"vue"},
+    h("p", {class:"eyebrow"}, Q.titre + " · " + (PORTEES[Q.portee] || "") + " · " + (Q.mode === "examen" ? "examen" : "entraînement")),
+    h("div", {class:"bilan"},
+      h("p", {class:"bigscore"}, fmt(tot), h("span", {class:"sur"}, " / " + max + " pt")),
+      h("p", {class:"sur20"}, "soit " + sur20(tot, max) + " / 20"),
+      max < Q.items.length ? h("p", {class:"muted petit"}, "Série arrêtée après " + max + " questions sur " + Q.items.length + ".") : null,
+      sauve ? h("p", {class:"muted petit"}, sauve) : null),
+    h("div", {class:"table-wrap"}, h("table", {},
+      h("thead", {}, h("tr", {}, h("th", {}, "Niveau"), h("th", {class:"num"}, "Points"), h("th", {class:"num"}, "/20"))),
+      h("tbody", {}, par.map(r => h("tr", {}, h("td", {}, NIVEAUX[r.n]), h("td", {class:"num"}, fmt(r.p) + " / " + r.m), h("td", {class:"num"}, sur20(r.p, r.m))))))),
+    h("div", {class:"dist"},
+      h("span", {class:"d0"}, "Tout juste : " + dist[0]), h("span", {class:"d1"}, "1 faute : " + dist[1]),
+      h("span", {class:"d2"}, "2 fautes : " + dist[2]), h("span", {class:"d3"}, "3 fautes ou plus : " + dist[3])),
+    h("div", {class:"actions"},
+      (c && qs && nErr) ? h("button", {class:"btn primaire", type:"button", onclick:() => demarrerQuiz(c, qs, "erreurs")}, "Refaire mes erreurs (" + nErr + ")") : null,
+      h("button", {class:"btn", type:"button", onclick:() => ouvrirCours(Q.coursId)}, "Retour au cours")),
+    h("section", {class:"sec corrections"},
+      h("h2", {}, Q.mode === "examen" ? "Correction" : "Correction de tes erreurs"),
+      Q.mode === "entrainement" ? h("label", {class:"bascule"}, h("input", {type:"checkbox", id:"toutvoir", checked:S.toutVoir || null, onchange:e => { S.toutVoir = e.target.checked; render(); }}), "Afficher aussi les questions justes") : null,
+      liste.length ? liste.map(carteCorrection) : h("p", {class:"muted"}, "Aucune erreur sur cette série.")));
+}
+
+// ----- Ajout d'un cours -----
+function vueAjout(){
+  const a = S.ajout;
+  const accept = [".pdf", ".docx", ".pptx", ".txt", ".md"].concat(S.imagesOK ? (S.imageTypes.length ? S.imageTypes : ["image/*"]) : []).join(",");
+  const btn = h("button", {class:"btn primaire", type:"submit", "data-k":"creer", disabled:(!a.fichiers.length && !a.texte.trim()) || null}, "Créer le QCM");
+  const maj = () => { btn.disabled = !a.fichiers.length && !a.texte.trim(); };
+  return h("div", {class:"vue"},
+    lienRetour("Mes cours", () => aller("accueil")),
+    h("header", {}, h("p", {class:"eyebrow"}, "Nouveau cours"), h("h1", {class:"h-page"}, "Ajouter un cours")),
+    h("form", {class:"form", onsubmit:e => { e.preventDefault(); if (!btn.disabled) lancerGeneration(); }},
+      h("div", {class:"champ"},
+        h("label", {for:"fichiers"}, "Fichiers du cours"),
+        h("p", {class:"aide"}, S.imagesOK ? "PDF, Word (.docx), PowerPoint (.pptx) ou photos des pages. Tu peux en mettre plusieurs." : "PDF, Word (.docx) ou PowerPoint (.pptx). Tu peux en mettre plusieurs."),
+        h("input", {type:"file", id:"fichiers", multiple:true, accept, onchange:e => {
+          for (const f of e.target.files) if (!a.fichiers.some(x => x.name === f.name && x.size === f.size)) a.fichiers.push(f);
+          e.target.value = ""; render();
+        }}),
+        a.fichiers.length ? h("ul", {class:"fichiers"}, a.fichiers.map((f, i) => h("li", {},
+          h("span", {}, f.name, h("small", {}, " · " + taille(f.size))),
+          h("button", {type:"button", class:"lien", "aria-label":"Retirer " + f.name, onclick:() => { a.fichiers.splice(i, 1); render(); }}, "Retirer")))) : null),
+      h("div", {class:"champ"},
+        h("label", {for:"texte"}, "Ou colle le texte du cours"),
+        h("textarea", {id:"texte", rows:"7", placeholder:"Colle ici le contenu du cours…", value:a.texte, oninput:e => { a.texte = e.target.value; maj(); }})),
+      h("div", {class:"duo"},
+        h("div", {class:"champ"}, h("label", {for:"matiere"}, "Matière"),
+          h("select", {id:"matiere", onchange:e => { a.matiere = e.target.value; }},
+            h("option", {value:""}, "Détecter depuis le cours"),
+            MATIERES.map(m => h("option", {value:m, selected:a.matiere === m || null}, m)))),
+        h("div", {class:"champ"}, h("label", {for:"titre"}, "Titre (facultatif)"),
+          h("input", {type:"text", id:"titre", value:a.titre, placeholder:"Repris du cours si vide", oninput:e => { a.titre = e.target.value; }}))),
+      h("p", {class:"note petit"}, "La création utilise ton compte Claude (une autorisation est demandée la première fois). Compte 3 à 8 minutes selon la longueur du cours : environ 10 questions par niveau, plus si le cours est long."),
+      h("div", {class:"actions"}, btn)));
+}
+
+// ----- Génération -----
+function etape(cle, label, etat, detail){
+  const g = S.gen; if (!g) return;
+  let e = g.etapes.find(x => x.cle === cle);
+  if (!e){ e = {cle, label:label || "", etat:"attente", detail:""}; g.etapes.push(e); }
+  if (label) e.label = label;
+  if (etat) e.etat = etat;
+  if (detail !== undefined && detail !== null) e.detail = detail;
+  if (S.vue === "generation") render();
+}
+function vueGeneration(){
+  const g = S.gen;
+  return h("div", {class:"vue"},
+    h("header", {}, h("p", {class:"eyebrow"}, "Création du QCM"), h("h1", {class:"h-page"}, g.titre)),
+    h("ol", {class:"etapes"}, g.etapes.map(e => h("li", {class:"etape " + e.etat},
+      h("span", {class:"puce", "aria-hidden":"true"}), h("span", {}, e.label), h("span", {class:"etape-detail"}, e.detail)))),
+    g.erreur ? h("p", {class:"alerte"}, g.erreur) : null,
+    g.fini
+      ? h("div", {class:"note"},
+          g.total ? h("p", {}, g.total + " " + pluriel(g.total, "question créée", "questions créées") + (g.complet ? "." : ". Il en manque : tu pourras compléter depuis la page du cours.")) : null,
+          h("div", {class:"actions"},
+            g.coursId ? h("button", {class:"btn primaire", type:"button", onclick:() => ouvrirCours(g.coursId)}, "Ouvrir le cours") : null,
+            h("button", {class:"btn", type:"button", onclick:() => aller(g.coursId ? "accueil" : "ajout")}, g.coursId ? "Mes cours" : "Revenir au formulaire")))
+      : h("div", {class:"note"},
+          h("p", {}, "Garde cette page ouverte. Si elle se ferme, tu pourras reprendre avec « Compléter » depuis la page du cours."),
+          h("div", {class:"actions"}, h("button", {class:"btn", type:"button", onclick:() => g.ctl.abort()}, "Arrêter"))));
+}
+function messageErreur(e){
+  const c = e && e.code;
+  const m = {
+    not_granted:"L'accès à Claude a été refusé pour cette page. Recharge la page pour qu'il soit redemandé.",
+    sampling_disabled:"Claude n'est pas disponible sur ce compte.",
+    rate_limited:"La limite d'utilisation de ton compte Claude est atteinte. Réessaie plus tard : les questions déjà créées sont gardées.",
+    session_expired:"Ta session Claude a expiré : reconnecte-toi puis réessaie.",
+    prompt_too_large:"Le cours est trop long pour un seul QCM. Sépare-le en deux parties et ajoute-les une par une.",
+    image_rejected:"Une image n'a pas pu être lue (format ou taille). Essaie avec une autre photo.",
+    images_unavailable:"Les photos ne sont pas acceptées ici : utilise un PDF, un Word, un PowerPoint ou colle le texte.",
+    refused:"Claude a refusé de traiter ce contenu.",
+    invalid_json:"La réponse de Claude était incomplète. Réessaie.",
+    empty_completion:"Claude n'a rien renvoyé. Réessaie.",
+    cancelled:"Création arrêtée. Les questions déjà créées sont gardées.",
+    pdf_scanne:"Ce PDF est scanné (il ne contient pas de texte). Ajoute plutôt des photos des pages, ou colle le texte.",
+    format:"Format non pris en charge" + (e && e.fichier ? " (" + e.fichier + ")" : "") + ". Utilise PDF, Word (.docx), PowerPoint (.pptx), photos ou texte.",
+    trop_court:"Le texte du cours est trop court ou n'a pas pu être lu.",
+    plan:"Le plan du cours n'a pas pu être établi. Réessaie.",
+    source_absente:"Le texte de ce cours n'a pas été conservé : supprime le cours puis ajoute-le à nouveau.",
+    invalid_argument:"Enregistrement refusé : ton accès à cette page ne permet pas d'ajouter des cours. Il faut l'accès « Éditeur ».",
+    quota_exceeded:"L'espace de stockage de la page est plein. Supprime d'anciens cours.",
+    revoked:"L'accès à cette page a changé. Recharge la page.",
+    local:"La mémoire de cet appareil est pleine."
+  }[c];
+  return m || (c ? "Problème de connexion avec Claude. Réessaie dans un moment." : "Un fichier n'a pas pu être lu. Essaie de l'exporter en PDF ou colle le texte.");
+}
+function matiereValide(s){ s = String(s || "").toLowerCase(); return MATIERES.find(m => m !== "Autre" && (s.includes(m.toLowerCase().split(" (")[0]) || m.toLowerCase().includes(s) && s.length > 3)) || "Autre"; }
+function specsPour(n){
+  const nQru = Math.max(1, Math.round(n * (0.25 + Math.random() * 0.12)));
+  const specs = [];
+  for (let i = 0; i < nQru; i++) specs.push({type:"QRU", nbVraies:1});
+  let sac = [];
+  while (specs.length < n){ if (!sac.length) sac = shuffle([2,3,4,5]); specs.push({type:"QCM", nbVraies:sac.pop()}); }
+  return shuffle(specs);
+}
+function construireLots(plan){
+  const lots = [];
+  [["facile",1],["moyen",2],["difficile",3]].forEach(([k, n]) => {
+    const angles = (Array.isArray(plan[k]) ? plan[k] : [])
+      .map(a => typeof a === "string" ? a : (a && (a.angle || a.question || a.description)) || "")
+      .map(s => String(s).trim().slice(0, 400)).filter(Boolean).slice(0, 15);
+    if (!angles.length) return;
+    const specs = specsPour(angles.length);
+    const items = angles.map((angle, i) => Object.assign({angle}, specs[i]));
+    const tailleLot = Math.ceil(items.length / Math.ceil(items.length / 6));
+    for (let i = 0; i < items.length; i += tailleLot) lots.push({niveau:n, items:items.slice(i, i + tailleLot), statut:"attente"});
+  });
+  return lots;
+}
+function normaliserQuestion(r, niveau){
+  if (!r || typeof r !== "object") return null;
+  const enonce = String(r.enonce || "").trim().slice(0, 700);
+  const brutes = Array.isArray(r.propositions) ? r.propositions : [];
+  if (!enonce || brutes.length < 5) return null;
+  const props = brutes.slice(0, 5).map((p, i) => ({
+    id:"abcde"[i], texte:String((p && p.texte) || "").trim().slice(0, 450),
+    vrai:!!p && (p.vrai === true || p.vrai === "true"),
+    explication:String((p && p.explication) || "").trim().slice(0, 800)}));
+  if (props.some(p => !p.texte)) return null;
+  const nv = props.filter(p => p.vrai).length;
+  if (!nv) return null;
+  return {id:newQid(), niveau, type:nv === 1 ? "QRU" : "QCM", enonce, propositions:props, a_retenir:String(r.a_retenir || "").trim().slice(0, 600)};
+}
+function promptPlan(texte, matiere){
+  return `Tu prépares des QCM de révision pour une étudiante en 3e année de médecine (France)${matiere ? ", matière : " + matiere : ""}.
+Elle révise en espacé (J7, J14, J28) : l'ensemble des questions doit lui faire repasser TOUT le cours, sans qu'elle ait besoin de le rouvrir.
+
+Étape demandée : analyser le cours ci-dessous et préparer le plan des questions. Ne rédige pas encore les questions.
+
+1. "titre" : titre court et précis du cours (celui du document si possible).
+2. "matiere" : une matière parmi : ${MATIERES.join(", ")}.
+3. "notions" : la liste EXHAUSTIVE des notions du cours, dans l'ordre du cours : définitions, mécanismes, classifications, valeurs chiffrées et normes, signes, étiologies, exceptions, formules. Une notion = une ligne courte.
+4. "facile", "moyen", "difficile" : pour chaque niveau, la liste des questions à poser. Chaque élément décrit en une phrase ce que la question teste (notions et chiffres précis visés).
+   - Facile : définitions, notions de base, reconnaissance directe.
+   - Moyen : mécanismes, liens entre notions, comparaisons, application.
+   - Difficile : détails fins, valeurs chiffrées précises, pièges (inversions, chiffres modifiés, notions proches confondues), raisonnement ou calcul si le cours s'y prête.
+   - 10 questions par niveau pour un cours de longueur normale, jusqu'à 15 par niveau si le cours est long et dense, moins de 10 seulement si le cours est très court.
+   - Chaque notion doit être testée par au moins une question, tous niveaux confondus. Jamais deux questions sur le même angle.
+
+Utilise UNIQUEMENT le contenu du cours : aucune connaissance extérieure.
+
+Réponds uniquement avec ce JSON :
+{"titre":"…","matiere":"…","notions":["…"],"facile":["…"],"moyen":["…"],"difficile":["…"]}
+
+=== COURS ===
+${texte}
+=== FIN DU COURS ===`;
+}
+function promptLot(texte, niveau, items){
+  return `Tu rédiges des QCM de révision pour une étudiante en 3e année de médecine (France), à partir de son cours (ci-dessous).
+
+Règles impératives :
+- Utilise UNIQUEMENT le contenu du cours. Aucune information extérieure, même vraie.
+- Chaque question a un énoncé et EXACTEMENT 5 propositions. L'énoncé demande toujours de cocher la ou les propositions EXACTES.
+- Respecte EXACTEMENT le type et le nombre de propositions vraies demandés pour chaque question (QRU = une seule vraie ; QCM = le nombre indiqué). L'ordre des propositions sera mélangé ensuite.
+- Niveau de ces questions : ${NIVEAU_DESC[niveau]}
+- Pièges pour les propositions fausses : inversions (augmente/diminue, afférent/efférent, cause/conséquence, droite/gauche, avant/après…), chiffres ou valeurs modifiés (proches mais faux), confusions entre notions proches du cours. N'utilise PAS de mots absolus (« toujours », « jamais », « systématiquement », « uniquement ») comme piège.
+- Interroge les chiffres et valeurs précises du cours quand il y en a.
+- Les propositions fausses sont plausibles et du même style et de la même longueur que les vraies. Pas de « toutes les réponses » ni de proposition absurde. Une proposition ne donne pas la réponse d'une autre.
+- "explication" pour CHAQUE proposition (1 à 3 phrases) : si elle est vraie, rappelle le contexte utile ; si elle est fausse, donne la formulation correcte avec la bonne valeur. L'étudiante doit pouvoir réviser avec la seule correction, sans rouvrir son cours.
+- "a_retenir" : 1 à 2 phrases qui résument la notion clé de la question.
+- En français, avec les termes exacts du cours.
+
+Questions à rédiger :
+${items.map((it, i) => `${i + 1}. ${it.angle} → ${it.type === "QRU" ? "QRU : exactement 1 proposition vraie sur 5" : "QCM : exactement " + it.nbVraies + " propositions vraies sur 5"}`).join("\n")}
+
+Réponds uniquement avec un tableau JSON de ${items.length} objets, dans le même ordre :
+[{"enonce":"…","propositions":[{"texte":"…","vrai":true,"explication":"…"},{"texte":"…","vrai":false,"explication":"…"}, … 5 propositions au total],"a_retenir":"…"}]
+
+=== COURS ===
+${texte}
+=== FIN DU COURS ===`;
+}
+const promptTranscription = (n) => `Ces ${n} image(s) sont des pages ou des photos d'un cours de médecine. Transcris fidèlement TOUT le texte visible, dans l'ordre de lecture : titres, paragraphes, listes, tableaux (ligne par ligne, cellules séparées par « | »), légendes et annotations des schémas, valeurs chiffrées et unités. Pour un schéma sans texte qui apporte une information, décris-le en une ligne entre crochets. Ne résume pas, n'ajoute rien. Sépare les images par une ligne « --- ».`;
+
+function chargerScript(src){
+  return new Promise((ok, ko) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("script")); document.head.append(s); });
+}
+let _pdf = null, _zip = null;
+function pdfjs(){
+  return _pdf || (_pdf = (async () => { await chargerScript(CDN.pdf); await chargerScript(CDN.pdfWorker); if (!window.pdfjsLib) throw new Error("pdfjs"); return window.pdfjsLib; })().catch(e => { _pdf = null; throw e; }));
+}
+function jszip(){
+  return _zip || (_zip = chargerScript(CDN.zip).then(() => { if (!window.JSZip) throw new Error("jszip"); return window.JSZip; }).catch(e => { _zip = null; throw e; }));
+}
+async function lirePdf(f){
+  const lib = await pdfjs();
+  const doc = await lib.getDocument({data:new Uint8Array(await f.arrayBuffer()), isEvalSupported:false}).promise;
+  const pages = [];
+  for (let i = 1; i <= doc.numPages; i++){
+    const tc = await (await doc.getPage(i)).getTextContent();
+    let s = "";
+    for (const it of tc.items){ if (typeof it.str !== "string") continue; s += it.str + (it.hasEOL ? "\n" : ""); }
+    pages.push(s.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").trim());
+  }
+  const moy = pages.reduce((s, t) => s + t.length, 0) / Math.max(1, pages.length);
+  return {doc, scanne:moy < 80, texte:pages.map((t, i) => t ? "[Page " + (i + 1) + "]\n" + t : "").filter(Boolean).join("\n\n")};
+}
+async function pageEnImage(doc, n){
+  const pg = await doc.getPage(n);
+  const v1 = pg.getViewport({scale:1});
+  const v = pg.getViewport({scale:Math.min(2.5, 1600 / Math.max(v1.width, v1.height))});
+  const cv = document.createElement("canvas"); cv.width = Math.ceil(v.width); cv.height = Math.ceil(v.height);
+  const ctx = cv.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  await pg.render({canvasContext:ctx, viewport:v}).promise;
+  return new Promise(ok => cv.toBlob(ok, "image/jpeg", 0.85));
+}
+function paragraphes(xml, para, run){
+  const d = new DOMParser().parseFromString(xml, "application/xml"), out = [];
+  for (const p of d.getElementsByTagName(para)){ let s = ""; for (const t of p.getElementsByTagName(run)) s += t.textContent; if (s.trim()) out.push(s.trim()); }
+  return out;
+}
+async function lireDocx(f){
+  const zip = await (await jszip()).loadAsync(await f.arrayBuffer());
+  const x = zip.file("word/document.xml");
+  return x ? paragraphes(await x.async("string"), "w:p", "w:t").join("\n") : "";
+}
+async function lirePptx(f){
+  const zip = await (await jszip()).loadAsync(await f.arrayBuffer());
+  const num = (n) => Number((n.match(/(\d+)\.xml$/) || [])[1] || 0);
+  const slides = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a, b) => num(a) - num(b));
+  const out = [];
+  for (const n of slides){
+    let bloc = "[Diapositive " + num(n) + "]\n" + paragraphes(await zip.file(n).async("string"), "a:p", "a:t").join("\n");
+    const notes = zip.file("ppt/notesSlides/notesSlide" + num(n) + ".xml");
+    if (notes){ const t = paragraphes(await notes.async("string"), "a:p", "a:t").filter(s => !/^\d+$/.test(s)); if (t.length) bloc += "\nNotes : " + t.join("\n"); }
+    out.push(bloc);
+  }
+  return out.join("\n\n");
+}
+async function transcrire(images, sig, onLot){
+  const k = Math.max(1, Math.min(S.maxImages || 1, 6)), n = Math.ceil(images.length / k), parts = [];
+  for (let i = 0; i < n; i++){
+    onLot(i + 1, n);
+    const lot = images.slice(i * k, (i + 1) * k);
+    const r = await S.sample(promptTranscription(lot.length), {images:lot, signal:sig, modelTier:"default", cache:false});
+    parts.push(r.text);
+  }
+  return parts.join("\n\n");
+}
+async function pool(items, k, fn){
+  let idx = 0;
+  await Promise.all(Array.from({length:Math.min(k, items.length)}, async () => { while (idx < items.length){ const it = items[idx++]; await fn(it); } }));
+}
+async function lancerGeneration(){
+  const a = S.ajout, ctl = new AbortController(), sig = ctl.signal;
+  S.gen = {etapes:[], ctl, titre:a.titre.trim() || "Nouveau cours", fini:false, erreur:null, coursId:null, total:0, complet:false};
+  aller("generation");
+  try {
+    const textes = [], images = [];
+    etape("lecture", "Lecture du cours", "en_cours");
+    for (const f of a.fichiers){
+      if (sig.aborted) throw {code:"cancelled"};
+      etape("lecture", null, null, f.name);
+      const ext = (f.name.split(".").pop() || "").toLowerCase();
+      if (ext === "pdf"){
+        const r = await lirePdf(f);
+        if (r.scanne){
+          if (!S.imagesOK) throw {code:"pdf_scanne"};
+          const n = Math.min(r.doc.numPages, 80);
+          for (let i = 1; i <= n; i++){ etape("lecture", null, null, "page " + i + "/" + n); images.push(await pageEnImage(r.doc, i)); }
+        } else textes.push(r.texte);
+      }
+      else if (ext === "docx") textes.push(await lireDocx(f));
+      else if (ext === "pptx") textes.push(await lirePptx(f));
+      else if (ext === "txt" || ext === "md") textes.push(await f.text());
+      else if ((f.type || "").indexOf("image/") === 0){ if (!S.imagesOK) throw {code:"images_unavailable"}; images.push(f); }
+      else throw {code:"format", fichier:f.name};
+    }
+    if (a.texte.trim()) textes.push(a.texte.trim());
+    etape("lecture", null, "ok", a.fichiers.length ? a.fichiers.length + " " + pluriel(a.fichiers.length, "fichier", "fichiers") : "texte collé");
+    if (images.length){
+      etape("transcription", "Lecture des images (" + images.length + ")", "en_cours");
+      textes.push(await transcrire(images, sig, (i, n) => etape("transcription", null, null, "lot " + i + "/" + n)));
+      etape("transcription", null, "ok", "");
+    }
+    const texte = textes.filter(Boolean).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (texte.length < 300) throw {code:"trop_court"};
+    if (bytes(texte) > MAX_TEXTE) throw {code:"prompt_too_large"};
+
+    etape("plan", "Repérage de toutes les notions du cours", "en_cours", "analyse…");
+    const plan = await S.sample.json(promptPlan(texte, a.matiere), {signal:sig, modelTier:"complex", cache:false});
+    const lots = construireLots(plan || {});
+    if (!lots.length) throw {code:"plan"};
+    const notions = (Array.isArray(plan.notions) ? plan.notions : [])
+      .map(x => String(typeof x === "string" ? x : (x && (x.titre || x.nom || x.notion)) || "").trim().slice(0, 200)).filter(Boolean).slice(0, 200);
+    etape("plan", null, "ok", notions.length + " notions · " + lots.reduce((s, l) => s + l.items.length, 0) + " questions prévues");
+
+    const id = newId();
+    const meta = {titre:(a.titre.trim() || String(plan.titre || "").trim() || "Cours sans titre").slice(0, 160),
+      matiere:a.matiere || matiereValide(plan.matiere), creeLe:new Date().toISOString(), statut:"en_cours",
+      nbQuestions:0, parNiveau:{"1":0,"2":0,"3":0}, notions, lots};
+    S.gen.titre = meta.titre; S.gen.coursId = id;
+    await S.store.setCours(id, meta);
+    if (bytes(texte) < 240000){ try { await S.store.setSource(id, texte); } catch {} }
+    S.ajout = nouvelAjout();
+    await genererLots(id, meta, [], texte, sig);
+  } catch (e){
+    S.gen.erreur = messageErreur(e);
+    for (const x of S.gen.etapes) if (x.etat === "en_cours") x.etat = "echec";
+  }
+  S.gen.fini = true;
+  if (S.gen.coursId) delete S.questionsCache[S.gen.coursId];
+  if (S.vue === "generation") render();
+}
+async function completer(c){
+  const ctl = new AbortController();
+  S.gen = {etapes:[], ctl, titre:c.titre, fini:false, erreur:null, coursId:c.id, total:0, complet:false};
+  aller("generation");
+  try {
+    etape("source", "Récupération du texte du cours", "en_cours");
+    const texte = await S.store.getSource(c.id);
+    if (!texte) throw {code:"source_absente"};
+    const questions = (await S.store.getQuestions(c.id)).map(q => Object.assign({}, q));
+    etape("source", null, "ok", questions.length + " questions déjà prêtes");
+    const meta = JSON.parse(JSON.stringify({lots:c.lots || []}));
+    await genererLots(c.id, meta, questions, texte, ctl.signal);
+  } catch (e){
+    S.gen.erreur = messageErreur(e);
+    for (const x of S.gen.etapes) if (x.etat === "en_cours") x.etat = "echec";
+  }
+  S.gen.fini = true;
+  delete S.questionsCache[c.id];
+  if (S.vue === "generation") render();
+}
+async function genererLots(id, meta, questions, texte, sig){
+  const lots = meta.lots;
+  const todo = lots.map((_, i) => i).filter(i => lots[i].statut !== "ok");
+  const parNiv = {}, rang = {};
+  todo.forEach(i => { const n = lots[i].niveau; parNiv[n] = (parNiv[n] || 0) + 1; });
+  todo.forEach(i => {
+    const n = lots[i].niveau; rang[n] = (rang[n] || 0) + 1;
+    etape("lot" + i, "Questions " + NIVEAUX_PL[n] + (parNiv[n] > 1 ? " (" + rang[n] + "/" + parNiv[n] + ")" : ""), "attente", lots[i].items.length + " questions");
+  });
+  const compter = () => { const par = {"1":0,"2":0,"3":0}; questions.forEach(q => { par[q.niveau] = (par[q.niveau] || 0) + 1; }); return par; };
+  const sauver = () => {
+    const qs = questions.slice(), snap = JSON.parse(JSON.stringify(lots));
+    return Promise.all([S.store.setQuestions(id, qs), S.store.updateCours(id, {lots:snap, nbQuestions:qs.length, parNiveau:compter()})]);
+  };
+  let stop = null;
+  await pool(todo, 2, async i => {
+    if (stop || sig.aborted) return;
+    const lot = lots[i];
+    etape("lot" + i, null, "en_cours", "rédaction…");
+    let qs;
+    try {
+      const r = await S.sample.json(promptLot(texte, lot.niveau, lot.items), {signal:sig, modelTier:"complex", cache:false,
+        onText:({text}) => { const k = (text.match(/"enonce"\s*:/g) || []).length; etape("lot" + i, null, null, "question " + Math.min(Math.max(k, 1), lot.items.length) + "/" + lot.items.length); }});
+      const arr = Array.isArray(r) ? r : (r && Array.isArray(r.questions) ? r.questions : []);
+      qs = arr.map(x => normaliserQuestion(x, lot.niveau)).filter(Boolean);
+      if (!qs.length) throw {code:"invalid_json"};
+    } catch (e){
+      const arrete = sig.aborted || (e && e.code === "cancelled");
+      lot.statut = arrete ? "attente" : "echec";
+      etape("lot" + i, null, "echec", arrete ? "arrêté" : "échec");
+      if (arrete) stop = stop || {code:"cancelled"};
+      else if (e && FATAL.has(e.code)) stop = stop || e;
+      return;
+    }
+    questions.push(...qs); lot.statut = "ok";
+    etape("lot" + i, null, "ok", qs.length + " " + pluriel(qs.length, "question", "questions"));
+    try { await sauver(); } catch (e){ stop = stop || e; }
+  });
+  const complet = lots.every(l => l.statut === "ok");
+  S.gen.total = questions.length; S.gen.complet = complet;
+  await S.store.updateCours(id, {lots:JSON.parse(JSON.stringify(lots)), statut:complet ? "pret" : "incomplet", nbQuestions:questions.length, parNiveau:compter()}).catch(() => {});
+  if (stop) throw stop;
+  if (!complet && !questions.length) throw {code:"invalid_json"};
+}
+
+// ---------- Reprise après mise à jour de la page ----------
+const hot = window.claude && window.claude.hot;
+try { if (hot && hot.snapshot) hot.snapshot(() => (S.vue === "quiz" || S.vue === "fin") ? {vue:S.vue, quiz:S.quiz, mode:S.mode, coursId:S.coursId} : {}); } catch {}
+function demarrer(data){
+  if (data && (data.vue === "quiz" || data.vue === "fin") && data.quiz){ S.vue = data.vue; S.quiz = data.quiz; S.mode = data.mode || S.mode; S.coursId = data.coursId; }
+  render();
+  init();
+}
+if (hot && typeof hot.ready === "function") hot.ready(demarrer); else demarrer(hot && hot.data ? hot.data : {});
+})();
+</script>
