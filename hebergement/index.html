@@ -789,6 +789,7 @@ function messageErreur(e){
     cancelled:"Création arrêtée. Les questions déjà créées sont gardées.",
     deja_en_cours:"Une partie des questions est encore en cours de création. Réessaie « Compléter » dans quelques minutes.",
     incomplet:"Il manque encore des questions à ce cours : utilise d'abord « Compléter les questions manquantes ».",
+    introuvable:"Ce cours n'existe plus sur le serveur.",
     format:"Format non pris en charge" + (e && e.fichier ? " (" + e.fichier + ")" : "") + ". Utilise PDF, Word (.docx), PowerPoint (.pptx), photos ou texte.",
     trop_court:"Le texte du cours est trop court ou n'a pas pu être lu.",
     plan:"Le plan du cours n'a pas pu être établi. Réessaie avec « Compléter ».",
@@ -972,11 +973,33 @@ async function finGeneration(){
   try { await chargerEtat(); } catch {}
   if (S.vue === "generation") render();
 }
+// Si la connexion est coupée (réseau, téléphone en veille, délai du serveur web), le serveur termine quand même :
+// on surveille le cours jusqu'à ce que le résultat soit enregistré au lieu d'annoncer un échec.
+const coupure = (e) => e && (e.code === "coupure" || e.code === "reseau");
+async function attendreCours(id, verifier, sig){
+  const limite = Date.now() + 8 * 60000;
+  while (Date.now() < limite){
+    await new Promise(r => setTimeout(r, 8000));
+    if (sig.aborted) throw {code:"cancelled"};
+    let d;
+    try { d = await api("etat"); } catch (e){ if (e.code === "auth") throw e; continue; }
+    const c = (d.cours || []).find(x => x.id === id);
+    if (!c) throw {code:"introuvable"};
+    if (verifier(c)) return c;
+  }
+  throw {code:"coupure"};
+}
 // Le plan (liste des notions et des questions à poser) puis les lots de questions, 2 à la fois.
 async function planEtLots(id, cours, sig, nouvelle){
   if (!cours){
     etape("plan", nouvelle ? "Choix de nouveaux angles" : "Repérage des notions", "en_cours", "analyse…");
-    cours = (await apiFlux("plan", {id, nouvelle:!!nouvelle}, null, sig)).cours;
+    const lotsAvant = ((S.cours.find(x => x.id === id) || {}).lots || []).length;
+    try { cours = (await apiFlux("plan", {id, nouvelle:!!nouvelle}, null, sig)).cours; }
+    catch (e){
+      if (!coupure(e)) throw e;
+      etape("plan", null, null, "connexion coupée, vérification…");
+      cours = await attendreCours(id, c => (c.lots || []).length > lotsAvant, sig);
+    }
     if (!nouvelle) S.gen.titre = cours.titre;
     const prevues = cours.lots.filter(l => l.statut !== "ok").reduce((s, l) => s + l.items.length, 0);
     etape("plan", null, "ok", (nouvelle ? "" : cours.notions.length + " notions · ") + prevues + " questions prévues");
@@ -995,7 +1018,18 @@ async function planEtLots(id, cours, sig, nouvelle){
     const nbItems = lots[i].items.length;
     etape("lot" + i, null, "en_cours", "rédaction…");
     try {
-      const fin = await apiFlux("lot", {id, index:i}, k => etape("lot" + i, null, null, "question " + k + "/" + nbItems), sig);
+      let fin;
+      try { fin = await apiFlux("lot", {id, index:i}, k => etape("lot" + i, null, null, "question " + k + "/" + nbItems), sig); }
+      catch (e){
+        if (!coupure(e)) throw e;
+        etape("lot" + i, null, null, "connexion coupée, vérification…");
+        const c = await attendreCours(id, c => {
+          const st = (c.lots[i] || {}).statut;
+          if (st === "echec") throw {code:"invalid_json"};
+          return st === "ok";
+        }, sig);
+        fin = {cours:c, ajoutees:nbItems};
+      }
       total = fin.cours.nbQuestions; ajoutees += fin.ajoutees;
       etape("lot" + i, null, "ok", fin.ajoutees + " " + pluriel(fin.ajoutees, "question", "questions"));
     } catch (e){

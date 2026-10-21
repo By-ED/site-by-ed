@@ -203,6 +203,7 @@ function appelerClaude(?string $cours, array $contenu, ?array $schema, string $e
     $texte = '';
     $stop = null;
     $usage = [];
+    $dernierEnvoi = time();
     try {
         $flux = $client->beta->messages->createStream(...[
             'maxTokens' => $maxTokens,
@@ -210,8 +211,12 @@ function appelerClaude(?string $cours, array $contenu, ?array $schema, string $e
             'model' => $modele,
             'system' => $system,
             'outputConfig' => $outputConfig,
+            // Le résumé de la réflexion arrive au fil de l'eau (même prix) : il permet d'envoyer des signaux de vie au navigateur.
+            'thinking' => ['type' => 'adaptive', 'display' => 'summarized'],
         ] + $repli);
         foreach ($flux as $ev) {
+            // Sans rien recevoir pendant une longue réflexion, le téléphone ou le serveur web coupent la connexion.
+            if (time() - $dernierEnvoi >= 10) { envoyer(['attente' => 1]); $dernierEnvoi = time(); }
             switch ($ev->type) {
                 case 'message_start':
                     $u = $ev->message->usage;
