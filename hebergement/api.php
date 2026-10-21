@@ -136,16 +136,34 @@ function noterUsage(array $usage): void
     });
 }
 
+// Prix en dollars d'une consommation de jetons, d'après les tarifs de config.php.
+function coutDe(array $usage): float
+{
+    global $C;
+    $p = $C['prix'] ?? [];
+    $d = 0.0;
+    foreach (['entree', 'sortie', 'cache_ecriture', 'cache_lecture'] as $k) $d += ($usage[$k] ?? 0) / 1e6 * (float) ($p[$k] ?? 0);
+    return $d;
+}
+
 function coutMois(): array
 {
-    global $DATA, $C;
+    global $DATA;
     $u = lireJson("$DATA/usage.json", []);
     $m = $u['mois'][date('Y-m')] ?? null;
     if (!$m) return ['dollars' => 0, 'appels' => 0];
-    $p = $C['prix'] ?? [];
-    $d = 0.0;
-    foreach (['entree', 'sortie', 'cache_ecriture', 'cache_lecture'] as $k) $d += ($m[$k] ?? 0) / 1e6 * (float) ($p[$k] ?? 0);
-    return ['dollars' => round($d, 2), 'appels' => $m['appels'] ?? 0];
+    return ['dollars' => round(coutDe($m), 2), 'appels' => $m['appels'] ?? 0];
+}
+
+// Coût cumulé d'un cours, série par série (« 1 » = création, « 2 » = première série de nouvelles questions…).
+function ajouterCout(string $id, int $serie, float $dollars): void
+{
+    avecVerrou($id, function () use ($id, $serie, $dollars) {
+        $c = lireJson(cheminCours($id), null);
+        if (!is_array($c)) return;
+        $c['couts'][(string) $serie] = round(($c['couts'][(string) $serie] ?? 0) + $dollars, 4);
+        ecrireJson(cheminCours($id), $c);
+    });
 }
 
 // ---------- Flux de réponse (garde la connexion ouverte pendant que Claude écrit) ----------
@@ -182,7 +200,7 @@ const ROLE = "Tu prépares des QCM de révision pour une étudiante en 3e année
  * Appelle Claude en streaming et renvoie le texte complet.
  * $surTexte est appelé avec le texte reçu jusque-là, pour suivre l'avancement.
  */
-function appelerClaude(?string $cours, array $contenu, ?array $schema, string $effort, int $maxTokens, ?callable $surTexte = null): string
+function appelerClaude(?string $cours, array $contenu, ?array $schema, string $effort, int $maxTokens, ?callable $surTexte = null, ?string $coursId = null, int $serie = 1): string
 {
     global $C;
     compterAppel();
@@ -252,6 +270,8 @@ function appelerClaude(?string $cours, array $contenu, ?array $schema, string $e
         finirEnErreur('connexion', 'Le serveur n\'a pas pu joindre Claude.');
     }
     noterUsage($usage);
+    $GLOBALS['DERNIER_COUT'] = coutDe($usage);
+    if ($coursId !== null) ajouterCout($coursId, $serie, $GLOBALS['DERNIER_COUT']);
     if ($stop === 'refusal') finirEnErreur('refused');
     if ($stop === 'max_tokens') finirEnErreur('tronque');
     return $texte;
@@ -454,12 +474,14 @@ switch ($action) {
         if (strlen($texte) > TEXTE_MAX) repondre(400, ['erreur' => 'prompt_too_large']);
         $matiere = in_array($entree['matiere'] ?? '', MATIERES, true) ? $entree['matiere'] : '';
         $id = 'c' . base_convert((string) time(), 10, 36) . bin2hex(random_bytes(3));
+        // Lecture des photos et schémas faite avant la création du cours : son coût est reporté ici.
+        $coutLecture = min(10.0, max(0.0, (float) ($entree['cout_lecture'] ?? 0)));
         file_put_contents(cheminSource($id), $texte);
         ecrireJson(cheminQuestions($id), ['questions' => []]);
         ecrireJson(cheminCours($id), [
             'titre' => mb_substr(trim((string) ($entree['titre'] ?? '')), 0, 160), 'matiere' => $matiere,
             'creeLe' => gmdate('c'), 'statut' => 'analyse', 'nbQuestions' => 0, 'parNiveau' => ['1' => 0, '2' => 0, '3' => 0],
-            'notions' => [], 'lots' => [],
+            'notions' => [], 'lots' => [], 'couts' => ['1' => round($coutLecture, 4)],
         ]);
         repondre(200, ['id' => $id]);
 
@@ -481,7 +503,7 @@ switch ($action) {
         }
         ouvrirFlux();
         $texte = appelerClaude(null, $contenu, null, 'low', 32000);
-        envoyer(['fin' => ['texte' => $texte]]);
+        envoyer(['fin' => ['texte' => $texte, 'cout' => round($GLOBALS['DERNIER_COUT'] ?? 0, 4)]]);
         exit;
 
     case 'plan':
@@ -501,7 +523,7 @@ switch ($action) {
             }
         }
         ouvrirFlux();
-        $plan = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consignePlan($cours['matiere'] ?? '', $dejaPoses)]], schemaPlan(), (string) ($C['effort'] ?? 'high'), 32000), true);
+        $plan = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consignePlan($cours['matiere'] ?? '', $dejaPoses)]], schemaPlan(), (string) ($C['effort'] ?? 'high'), 32000, null, $id, $serie), true);
         $lots = is_array($plan) ? construireLots($plan, $serie) : [];
         if (!$lots) finirEnErreur('plan');
         $cours = avecVerrou($id, function () use ($id, $plan, $lots, $nouvelle, $serie) {
@@ -559,9 +581,9 @@ switch ($action) {
             if ($j === $index) continue;
             foreach ($l['items'] as $it) $autresAngles[] = '(' . NIVEAUX_PL[(int) $l['niveau']] . ') ' . $it['angle'];
         }
-        $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneLot($niveau, $lot['items'], $autresAngles)]], schemaLot(),
-            (string) ($C['effort'] ?? 'high'), 32000, compteurQuestions(count($lot['items']))), true);
         $serieLot = (int) ($lot['serie'] ?? 1);
+        $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneLot($niveau, $lot['items'], $autresAngles)]], schemaLot(),
+            (string) ($C['effort'] ?? 'high'), 32000, compteurQuestions(count($lot['items'])), $id, $serieLot), true);
         $nouvelles = array_values(array_filter(array_map(fn ($r) => normaliserQuestion($r, $niveau, $serieLot), (array) ($brut['questions'] ?? []))));
         if (!$nouvelles) finirEnErreur('invalid_json');
         $cours = $marquer('ok', $nouvelles);

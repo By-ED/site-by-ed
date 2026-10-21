@@ -298,6 +298,7 @@ function jour(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
 const jPlus = (debut, d = new Date()) => Math.round((jour(d) - jour(debut)) / 86400000);
 function ajouterJours(debut, n){ const x = jour(debut); x.setDate(x.getDate() + n); return x; }
 const fmtDate = (d) => new Date(d).toLocaleDateString("fr-FR", {day:"numeric", month:"short"});
+const dollars = (x) => Number(x).toLocaleString("fr-FR", {style:"currency", currency:"USD", minimumFractionDigits:2, maximumFractionDigits:x < 0.1 ? 3 : 2});
 const taille = (n) => n > 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " Mo" : Math.max(1, Math.round(n / 1024)) + " Ko";
 
 // Notation : 0 faute = 1 ; 1 faute = 0,5 ; 2 fautes = 0,2 ; 3 et plus = 0. Une faute = une case cochée à tort ou une bonne réponse oubliée.
@@ -452,7 +453,7 @@ function pied(){
   return h("footer", {class:"pied"},
     S.cours.length ? h("button", {class:"lien", type:"button", onclick:() => ouvrirCours("demo")}, "Ouvrir la démo (6 questions)") : null,
     h("p", {class:"petit"}, "Notation : tout juste = 1 point · 1 faute = 0,5 · 2 fautes = 0,2 · 3 fautes ou plus = 0. Une faute = une case cochée à tort ou une bonne réponse oubliée."),
-    u && u.appels ? h("p", {class:"petit"}, "Utilisation de Claude ce mois-ci : environ " + Number(u.dollars).toLocaleString("fr-FR", {style:"currency", currency:"USD"}) + " (" + u.appels + " appels).") : null);
+    u && u.appels ? h("p", {class:"petit"}, "Utilisation de Claude ce mois-ci : environ " + dollars(u.dollars) + " (" + u.appels + " appels).") : null);
 }
 
 // ----- Cours -----
@@ -492,7 +493,8 @@ function vueCours(){
       c.demo ? h("p", {class:"muted"}, "Questions d'exemple pour tester la page : elles ne viennent pas de ton cours.")
              : h("p", {class:"muted"}, "Ajouté le " + fmtDate(c.creeLe) + " · aujourd'hui J+" + Math.max(0, jPlus(c.creeLe))
                  + (qs ? " · " + total + " questions (" + nQru + " QRU, " + (total - nQru) + " QCM)" : "")),
-      c.demo ? null : h("div", {class:"jalons grand"}, jalons(c).map(j => h("span", {class:"jal " + j.etat}, "J" + j.m, h("small", {}, " " + libelleJalon(j)))))),
+      c.demo ? null : h("div", {class:"jalons grand"}, jalons(c).map(j => h("span", {class:"jal " + j.etat}, "J" + j.m, h("small", {}, " " + libelleJalon(j))))),
+      c.couts ? ligneCouts(c.couts) : null),
     S.erreurPage ? h("p", {class:"alerte"}, S.erreurPage) : null,
     genActive ? h("div", {class:"note"}, h("p", {}, "Création des questions en cours."), h("button", {class:"lien", type:"button", onclick:() => aller("generation")}, "Voir la progression")) : null,
     incomplet ? h("div", {class:"note"},
@@ -516,6 +518,13 @@ function vueCours(){
     !c.demo && c.statut === "pret" && !genActive ? blocNouvelles(c) : null,
     historique(c, prog),
     c.demo ? null : suppression(c));
+}
+function ligneCouts(couts){
+  const series = Object.keys(couts).map(Number).filter(n => couts[n] > 0).sort((a, b) => a - b);
+  if (!series.length) return null;
+  const total = series.reduce((s, n) => s + couts[n], 0);
+  const parties = series.map(n => (n === 1 ? "création " : "série " + n + " ") + dollars(couts[n]));
+  return h("p", {class:"muted petit"}, "Coût Claude : " + parties.join(" · ") + (series.length > 1 ? " · total " + dollars(total) : ""));
 }
 function blocNouvelles(c){
   if (S.confirmSerie !== c.id) return h("section", {class:"sec"},
@@ -763,6 +772,7 @@ function vueGeneration(){
     g.fini
       ? h("div", {class:"note"},
           g.total ? h("p", {}, g.total + " " + pluriel(g.total, "question créée", "questions créées") + (g.complet ? "." : ". Il en manque : tu pourras compléter depuis la page du cours.")) : null,
+          g.cout ? h("p", {class:"muted petit"}, "Coût de cette création : " + dollars(g.cout)) : null,
           h("div", {class:"actions"},
             g.coursId ? h("button", {class:"btn primaire", type:"button", onclick:() => ouvrirCours(g.coursId)}, "Ouvrir le cours") : null,
             h("button", {class:"btn", type:"button", onclick:() => aller(g.coursId ? "accueil" : "ajout")}, g.coursId ? "Mes cours" : "Revenir au formulaire")))
@@ -881,6 +891,7 @@ async function lancerGeneration(){
   aller("generation");
   try {
     const textes = [], images = [], visuels = [];
+    let coutLecture = 0;
     etape("lecture", "Lecture du cours", "en_cours");
     for (const f of a.fichiers){
       if (sig.aborted) throw {code:"cancelled"};
@@ -913,7 +924,8 @@ async function lancerGeneration(){
       for (let i = 0; i < n; i++){
         etape("transcription", null, null, "lot " + (i + 1) + "/" + n);
         const lot = await Promise.all(images.slice(i * IMAGES_PAR_APPEL, (i + 1) * IMAGES_PAR_APPEL).map(async b => ({type:"image/jpeg", data:await enBase64(b)})));
-        textes.push((await apiFlux("transcrire", {images:lot}, null, sig)).texte);
+        const r = await apiFlux("transcrire", {images:lot}, null, sig);
+        textes.push(r.texte); coutLecture += r.cout || 0;
       }
       etape("transcription", null, "ok", "");
     }
@@ -926,7 +938,8 @@ async function lancerGeneration(){
       etape("visuels", "Lecture des schémas et tableaux (" + visuels.length + " " + pluriel(visuels.length, "page", "pages") + ")", "en_cours", "0/" + lots.length);
       await pool(lots.map((_, i) => i), 2, async i => {
         const imgs = await Promise.all(lots[i].map(async v => ({type:"image/jpeg", data:await enBase64(v.blob)})));
-        parties[i] = (await apiFlux("transcrire", {images:imgs, mode:"visuels", pages:lots[i].map(v => v.page)}, null, sig)).texte;
+        const r = await apiFlux("transcrire", {images:imgs, mode:"visuels", pages:lots[i].map(v => v.page)}, null, sig);
+        parties[i] = r.texte; coutLecture += r.cout || 0;
         etape("visuels", null, null, (++faits) + "/" + lots.length);
       });
       textes.push("=== Schémas, tableaux et images du cours ===\n" + parties.join("\n\n"));
@@ -935,7 +948,7 @@ async function lancerGeneration(){
     const texte = textes.filter(Boolean).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
     if (texte.length < 300) throw {code:"trop_court"};
     if (bytes(texte) > MAX_TEXTE) throw {code:"prompt_too_large"};
-    const {id} = await api("cours_creer", {texte, titre:a.titre.trim(), matiere:a.matiere});
+    const {id} = await api("cours_creer", {texte, titre:a.titre.trim(), matiere:a.matiere, cout_lecture:coutLecture});
     S.gen.coursId = id;
     S.ajout = nouvelAjout();
     await planEtLots(id, null, sig);
@@ -971,6 +984,8 @@ async function finGeneration(){
   S.gen.fini = true;
   if (S.gen.coursId) delete S.questionsCache[S.gen.coursId];
   try { await chargerEtat(); } catch {}
+  const c = S.cours.find(x => x.id === S.gen.coursId);
+  if (c && c.couts && S.gen.serie) S.gen.cout = c.couts[String(S.gen.serie)];
   if (S.vue === "generation") render();
 }
 // Si la connexion est coupée (réseau, téléphone en veille, délai du serveur web), le serveur termine quand même :
@@ -1001,6 +1016,7 @@ async function planEtLots(id, cours, sig, nouvelle){
       cours = await attendreCours(id, c => (c.lots || []).length > lotsAvant, sig);
     }
     if (!nouvelle) S.gen.titre = cours.titre;
+    S.gen.serie = cours.series || 1;
     const prevues = cours.lots.filter(l => l.statut !== "ok").reduce((s, l) => s + l.items.length, 0);
     etape("plan", null, "ok", (nouvelle ? "" : cours.notions.length + " notions · ") + prevues + " questions prévues");
   }

@@ -57,7 +57,7 @@ Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostati
 
 ## Données
 
-Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots), `questions/<id>.json`,
+Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots + `couts` : dollars par série, « 1 » = création), `questions/<id>.json`,
 `sources/<id>.txt`, `progres.json` (une seule élève), `usage.json` (appels du jour, jetons du mois).
 
 Artifact (base `db`) :
