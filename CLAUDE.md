@@ -18,7 +18,9 @@ Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
   l'API ne sert qu'à créer des QCM, jamais de relais libre vers Claude.
 - `config.php` (non versionné, modèle : `config.exemple.php`) : clé API, code d'accès, secret, modèle, effort, limite d'appels par jour.
 - `construire-zip.sh` : produit `qcm-o2switch.zip` (dépendances incluses) à téléverser ; `LISEZMOI.txt` = guide d'installation.
-- Création d'un cours : le navigateur extrait le texte (PDF/Word/PowerPoint ; photos et PDF scannés → action `transcrire`),
+- Création d'un cours : le navigateur extrait le texte (PDF/Word/PowerPoint ; photos et PDF scannés → action `transcrire`).
+  Les pages de PDF qui contiennent des images (schémas, tableaux) sont aussi envoyées à `transcrire` en mode `visuels` :
+  le texte de ces images n'est pas dans la couche texte du PDF. Ensuite,
   puis `cours_creer` → `plan` (notions + liste des questions, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
   Les actions longues répondent en NDJSON (`{"progres":n}` puis `{"fin":...}` ou `{"erreur":...}`).
   Le texte du cours est un bloc système mis en cache ; sortie JSON garantie par `output_config.format` ;
@@ -36,10 +38,13 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Notation par question : 0 faute = 1 point ; 1 faute = 0,5 ; 2 fautes = 0,2 ; 3 fautes ou plus = 0.
   Une faute = une case cochée à tort ou une bonne réponse oubliée. Même barème pour QRU et QCM.
 - Mélange de QRU (1 seule vraie) et de QCM ; dans les QCM, 2, 3, 4 ou 5 vraies, réparties au hasard.
-- 3 niveaux, présentés dans l'ordre : facile, moyen, difficile. Environ 10 questions par niveau, plus si le cours est long.
+- 3 niveaux, présentés dans l'ordre : facile, moyen, difficile. Environ 10 questions par niveau, plus si le cours est long ;
+  pour un cours court, 6 par niveau, sans répétition (choix de l'étudiante).
 - Les questions couvrent TOUT le cours (révisions espacées J7, J14, J28 sans rouvrir le cours).
 - Contenu : uniquement le cours fourni. Les chiffres et valeurs précises sont interrogés.
 - Pièges : inversions, chiffres modifiés, notions proches. Pas de pièges à base de « toujours / jamais ».
+- Anecdotes du professeur : ignorées, aucune question dessus (choix de l'étudiante).
+- Une même phrase du cours n'est jamais découpée en plusieurs propositions ; une notion ne revient que sous un angle nouveau.
 - Correction de chaque proposition (vraie ou fausse, avec la formulation correcte) + « À retenir ».
 - Modes : entraînement (correction après chaque question) et examen (correction à la fin).
 - Ordre des questions et des propositions remélangé à chaque passage.

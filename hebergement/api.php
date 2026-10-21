@@ -292,16 +292,18 @@ function consignePlan(string $matiere): string
     return "Étape demandée : analyser le cours et préparer le plan des questions. Ne rédige pas encore les questions." . ($matiere ? "\nMatière indiquée par l'étudiante : $matiere." : '') . "\n\n"
         . "1. \"titre\" : titre court et précis du cours (celui du document si possible).\n"
         . "2. \"matiere\" : la matière du cours parmi la liste proposée.\n"
-        . "3. \"notions\" : la liste EXHAUSTIVE des notions du cours, dans l'ordre du cours : définitions, mécanismes, classifications, valeurs chiffrées et normes, signes, étiologies, exceptions, formules. Une notion = une ligne courte.\n"
+        . "3. \"notions\" : la liste EXHAUSTIVE des notions du cours, dans l'ordre du cours : définitions, mécanismes, classifications, valeurs chiffrées et normes, signes, étiologies, exceptions, formules, schémas et tableaux. Une notion = une ligne courte.\n"
         . "4. \"facile\", \"moyen\", \"difficile\" : pour chaque niveau, la liste des questions à poser. Chaque élément décrit en une phrase ce que la question teste (notions et chiffres précis visés).\n"
         . "   - Facile : définitions, notions de base, reconnaissance directe.\n"
         . "   - Moyen : mécanismes, liens entre notions, comparaisons, application.\n"
-        . "   - Difficile : détails fins, valeurs chiffrées précises, pièges (inversions, chiffres modifiés, notions proches confondues), raisonnement ou calcul si le cours s'y prête.\n"
-        . "   - 10 questions par niveau pour un cours de longueur normale, jusqu'à 15 par niveau si le cours est long et dense, moins de 10 seulement si le cours est très court.\n"
-        . "   - Chaque notion doit être testée par au moins une question, tous niveaux confondus. Jamais deux questions sur le même angle.";
+        . "   - Difficile : détails fins, valeurs chiffrées précises, pièges (inversions, chiffres modifiés, notions proches confondues), cas pratiques, raisonnement ou calcul si le cours s'y prête.\n"
+        . "   - Nombre de questions selon la quantité de notions : environ 10 par niveau pour un cours de longueur normale, jusqu'à 15 par niveau si le cours est long et dense. Pour un cours court, 6 par niveau : moins de questions, mais aucune répétition.\n"
+        . "   - Chaque notion doit être testée par au moins une question, tous niveaux confondus. Une même notion n'est jamais interrogée deux fois au même niveau ; si elle revient à un autre niveau, c'est sous un angle vraiment différent (définition au facile, comparaison ou mécanisme au moyen, cas pratique ou piège au difficile).\n"
+        . "   - Les schémas, tableaux, classifications et listes du cours (y compris la partie « Schémas, tableaux et images » si elle existe) sont des notions à part entière : prévois des questions dessus.\n"
+        . "   - Ignore les anecdotes et histoires racontées par le professeur : aucune question sur leurs détails (lieux, chiffres de l'histoire, qui fait quoi le plus souvent…). Elles ne figurent pas non plus dans \"notions\".";
 }
 
-function consigneLot(int $niveau, array $items): string
+function consigneLot(int $niveau, array $items, array $autresAngles): string
 {
     $lignes = [];
     foreach ($items as $i => $it) {
@@ -309,6 +311,7 @@ function consigneLot(int $niveau, array $items): string
             ? 'QRU : exactement 1 proposition vraie sur 5'
             : 'QCM : exactement ' . $it['nbVraies'] . ' propositions vraies sur 5');
     }
+    $autres = $autresAngles ? "\n\nAutres questions du même QCM, rédigées à part (n'en reprends pas les angles ni les propositions) :\n- " . implode("\n- ", $autresAngles) : '';
     return "Rédige les questions ci-dessous.\n\n"
         . "Règles impératives :\n"
         . "- Chaque question a un énoncé et EXACTEMENT 5 propositions. L'énoncé demande toujours de cocher la ou les propositions EXACTES.\n"
@@ -317,12 +320,24 @@ function consigneLot(int $niveau, array $items): string
         . "- Pièges pour les propositions fausses : inversions (augmente/diminue, afférent/efférent, cause/conséquence, droite/gauche, avant/après…), chiffres ou valeurs modifiés (proches mais faux), confusions entre notions proches du cours. N'utilise PAS de mots absolus (« toujours », « jamais », « systématiquement », « uniquement ») comme piège.\n"
         . "- Interroge les chiffres et valeurs précises du cours quand il y en a.\n"
         . "- Les propositions fausses sont plausibles et du même style et de la même longueur que les vraies. Pas de « toutes les réponses » ni de proposition absurde. Une proposition ne donne pas la réponse d'une autre.\n"
+        . "- Chaque proposition teste un élément DISTINCT. Ne découpe jamais une même phrase ou une même définition du cours en plusieurs propositions quasi identiques (par exemple trois propositions vraies qui reprennent chacune un mot de la même définition).\n"
+        . "- Quand plusieurs propositions sont vraies, elles ne doivent pas se contenter de recopier une liste du cours : chacune demande de reconnaître, d'appliquer ou de distinguer quelque chose.\n"
+        . "- Aucune question ni proposition sur les anecdotes du professeur (lieux, chiffres ou personnages d'une histoire racontée en cours).\n"
         . "- \"explication\" pour CHAQUE proposition (1 à 3 phrases) : si elle est vraie, rappelle le contexte utile ; si elle est fausse, donne la formulation correcte avec la bonne valeur. L'étudiante doit pouvoir réviser avec la seule correction, sans rouvrir son cours.\n"
         . "- \"a_retenir\" : 1 à 2 phrases qui résument la notion clé de la question.\n\n"
-        . "Questions à rédiger, dans cet ordre :\n" . implode("\n", $lignes);
+        . "Questions à rédiger, dans cet ordre :\n" . implode("\n", $lignes) . $autres;
 }
 
-const CONSIGNE_TRANSCRIPTION = "Ces images sont des pages ou des photos d'un cours de médecine. Transcris fidèlement TOUT le texte visible, dans l'ordre de lecture : titres, paragraphes, listes, tableaux (ligne par ligne, cellules séparées par « | »), légendes et annotations des schémas, valeurs chiffrées et unités. Pour un schéma sans texte qui apporte une information, décris-le en une ligne entre crochets. Ne résume pas, n'ajoute rien. Sépare les images par une ligne « --- ».";
+function consigneVisuels(array $pages): string
+{
+    return "Ces images sont des pages d'un cours de médecine (" . implode(', ', $pages) . ", dans cet ordre). Leur texte courant a déjà été extrait séparément.\n"
+        . "Transcris UNIQUEMENT ce qui se trouve dans les images, schémas, tableaux, figures et diagrammes de ces pages : tout le texte qu'ils contiennent, "
+        . "les tableaux ligne par ligne (cellules séparées par « | », en indiquant les cases cochées), les légendes, et les liens que montre la disposition "
+        . "(par exemple quel exemple est rattaché à quelle catégorie d'un schéma). Ne recopie pas les paragraphes de texte courant, ni le surlignage.\n"
+        . "Commence chaque page par « [Page …] » avec son numéro. Si une page n'a aucun élément visuel porteur d'information, écris seulement « [Page …] rien à signaler ».";
+}
+
+const CONSIGNE_TRANSCRIPTION ="Ces images sont des pages ou des photos d'un cours de médecine. Transcris fidèlement TOUT le texte visible, dans l'ordre de lecture : titres, paragraphes, listes, tableaux (ligne par ligne, cellules séparées par « | »), légendes et annotations des schémas, valeurs chiffrées et unités. Pour un schéma sans texte qui apporte une information, décris-le en une ligne entre crochets. Ne résume pas, n'ajoute rien. Sépare les images par une ligne « --- ».";
 
 function specsPour(int $n): array
 {
@@ -447,7 +462,12 @@ switch ($action) {
             $contenu[] = ['type' => 'image', 'source' => ['type' => 'base64', 'mediaType' => $type, 'data' => $data]];
         }
         if (!$contenu) repondre(400, ['erreur' => 'image_rejected']);
-        $contenu[] = ['type' => 'text', 'text' => CONSIGNE_TRANSCRIPTION];
+        if (($entree['mode'] ?? '') === 'visuels') {
+            $pages = array_map(fn ($p) => mb_substr(preg_replace('/[^\pL\pN .,_()\-]/u', '', (string) $p), 0, 80), (array) ($entree['pages'] ?? []));
+            $contenu[] = ['type' => 'text', 'text' => consigneVisuels(array_slice($pages, 0, count($contenu)))];
+        } else {
+            $contenu[] = ['type' => 'text', 'text' => CONSIGNE_TRANSCRIPTION];
+        }
         ouvrirFlux();
         $texte = appelerClaude(null, $contenu, null, 'low', 32000);
         envoyer(['fin' => ['texte' => $texte]]);
@@ -509,7 +529,12 @@ switch ($action) {
         $termine = false;
         register_shutdown_function(function () use (&$termine, $marquer) { if (!$termine) $marquer('echec'); });
         $niveau = (int) $lot['niveau'];
-        $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneLot($niveau, $lot['items'])]], schemaLot(),
+        $autresAngles = [];
+        foreach ($cours['lots'] as $j => $l) {
+            if ($j === $index) continue;
+            foreach ($l['items'] as $it) $autresAngles[] = '(' . NIVEAUX_PL[(int) $l['niveau']] . ') ' . $it['angle'];
+        }
+        $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneLot($niveau, $lot['items'], $autresAngles)]], schemaLot(),
             (string) ($C['effort'] ?? 'high'), 32000, compteurQuestions(count($lot['items']))), true);
         $nouvelles = array_values(array_filter(array_map(fn ($r) => normaliserQuestion($r, $niveau), (array) ($brut['questions'] ?? []))));
         if (!$nouvelles) finirEnErreur('invalid_json');
