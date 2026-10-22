@@ -8,8 +8,10 @@ Elle ajoute elle-même ses cours ; Claude crée les questions.
 Site PHP pour l'hébergement O2switch du propriétaire. L'étudiante n'a pas de compte Claude :
 elle se connecte avec un code d'accès (lien `?code=...`, cookie signé valable 400 jours).
 
-En ligne : https://qcm.reev5185.odns.fr (sous-domaine technique o2switch, racine `/home/reev5185/qcm`).
-Le sous-domaine qcm.by-ed.fr a été essayé puis supprimé : cPanel refuse deux sous-domaines sur le même dossier.
+En ligne : https://qcm.galan-ga.com (domaine supplémentaire o2switch, racine `/home/reev5185/qcm`, certificat AutoSSL).
+DNS chez Shopify (galan-ga.com) : enregistrement A `qcm` → 109.234.166.238.
+Anciennes adresses abandonnées : qcm.reev5185.odns.fr (o2switch ne délivre pas de certificat pour odns.fr)
+et qcm.by-ed.fr (cPanel refuse deux adresses sur le même dossier).
 Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
 
 - `index.html` : toute l'interface (HTML + CSS + JS, pdf.js et JSZip chargés à la demande depuis cdnjs).
