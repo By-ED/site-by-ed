@@ -5,6 +5,7 @@
 //
 // Lancer : node robot.js            (tourne en continu, vérifie toutes les INTERVALLE secondes)
 //          node robot.js --une-fois (un seul passage, pour les essais)
+//          node robot.js --essai    (connexion XPO + expédition inventée, remplie puis annulée)
 'use strict';
 
 const fs = require('fs');
@@ -92,6 +93,18 @@ async function creerXpo(page, x) {
   await remplir('#Poids', x.poids);
   await remplir('#Instructions', coupe(consignes, 70));
   await remplir('#Remarques', coupe(consignes.slice(70), 70));
+  // La saisie ouvre la liste du carnet d'adresses XPO, qui reste par-dessus le bouton Valider : on la masque.
+  await f.locator('#Nom').press('Escape');
+  await f.evaluate(() => {
+    const valider = document.querySelector('input[name=FormExpedentCompletSubmitBt]');
+    valider.scrollIntoView({ block: 'center' });
+    const r = valider.getBoundingClientRect();
+    let e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    // On ne masque que le cadre flottant (position absolue ou fixe) posé sur le bouton, jamais le formulaire.
+    for (; e && e !== valider && !e.contains(valider); e = e.parentElement) {
+      if (['absolute', 'fixed'].includes(getComputedStyle(e).position)) { e.style.display = 'none'; return; }
+    }
+  });
 
   const capture = path.join(CAPTURES, `${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}-${x.num}.png`);
   await page.screenshot({ path: capture, fullPage: true });
@@ -140,7 +153,30 @@ async function passage() {
   }
 }
 
+// Essai à blanc : connexion XPO et saisie d'une expédition inventée, toujours annulée (jamais envoyée).
+async function essai() {
+  if (MODE === 'reel') throw new Error('essai refusé : repasser MODE=repetition dans .env');
+  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui' });
+  try {
+    const page = await (await navigateur.newContext({ locale: 'fr-FR', viewport: { width: 1500, height: 900 } })).newPage();
+    await connexionXpo(page);
+    journal('connexion XPO réussie');
+    const res = await creerXpo(page, {
+      num: 'ESSAI-ROBOT', transporteur: 'XPO', date: new Date().toISOString().slice(0, 10),
+      dest: { nom: 'ESSAI NE PAS LIVRER', complement: '', adresse1: '1 RUE DE L ESSAI', adresse2: '', cp: '71800', ville: 'LA CLAYETTE', pays: 'FR' },
+      palettes: 1, places: 2, poids: 100, consignes: 'ESSAI ROBOT', rdv: false,
+    });
+    journal('essai :', res.message);
+  } finally {
+    await navigateur.close();
+  }
+}
+
 (async () => {
+  if (process.argv.includes('--essai')) {
+    try { await essai(); } catch (e) { journal('échec essai', e.message); process.exitCode = 1; }
+    return;
+  }
   journal(`robot démarré (mode ${MODE})`);
   do {
     try { await passage(); } catch (e) { journal('erreur', e.message); }
