@@ -6,4 +6,8 @@ return [
 
     // Texte aléatoire et long, utilisé pour signer le cookie de connexion. Ne le communique à personne.
     'secret' => 'remplace-moi-par-une-longue-phrase-au-hasard',
+
+    // Jeton du robot qui crée les expéditions chez les transporteurs (le même dans le .env du robot).
+    // Au moins 24 caractères au hasard ; vide = robot désactivé.
+    'jeton_robot' => '',
 ];

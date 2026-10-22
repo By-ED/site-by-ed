@@ -72,6 +72,8 @@ function grilles(): ?array { global $DATA; return lireJson("$DATA/grilles.json",
 function lotEnCours(): ?array { global $DATA; return lireJson("$DATA/lot.json", null); }
 function cheminHistorique(string $mois): string { global $DATA; return "$DATA/historique/$mois.json"; }
 function historiqueMois(string $mois): array { return lireJson(cheminHistorique($mois), ['expeditions' => []])['expeditions']; }
+// Expéditions confiées au robot : num => {transporteur, statut (en_attente | en_cours | cree | erreur), numero, message, donnees…}.
+function envois(): array { global $DATA; return lireJson("$DATA/envois.json", []); }
 
 function moisValide(mixed $m): string
 {
@@ -97,7 +99,15 @@ function calculLot(array $lot, array $R): array
     foreach ($export['lignes'] as $l) if ($d = dateIso($l['v'][$ix])) $mois[substr($d, 0, 7)] = true;
     $hist = [];
     foreach (array_keys($mois) as $m) $hist = array_merge($hist, array_values(historiqueMois((string) $m)));
-    return calculerLot($export, $lot['saisies'] ?? [], $R, grilles(), $hist) + ['fichier' => $lot['fichier'], 'importe_le' => $lot['importe_le'], 'enregistre_le' => $lot['enregistre_le'] ?? null];
+    $c = calculerLot($export, $lot['saisies'] ?? [], $R, grilles(), $hist) + ['fichier' => $lot['fichier'], 'importe_le' => $lot['importe_le'], 'enregistre_le' => $lot['enregistre_le'] ?? null];
+    // N° attribué par le transporteur (créé par le robot) : repris dans le retour FLOW ONE.
+    $envois = envois();
+    foreach ($c['expeditions'] as &$e) {
+        $v = $envois[$e['num']] ?? null;
+        if ($v && $v['transporteur'] === $e['choix'] && ($v['numero'] ?? '') !== '') $e['suivi'] = $v['numero'];
+    }
+    unset($e);
+    return $c;
 }
 
 function etat(): array
@@ -121,6 +131,8 @@ function etat(): array
         'grille' => $g ? ['fichier' => $g['fichier'], 'importe_le' => $g['importe_le']] : null,
         'gasoil_mois' => array_map(fn ($t) => nombre($R['gasoil'][$mois][$t] ?? null), array_combine(TRANSPORTEURS, TRANSPORTEURS)),
         // Logo d'Euro Distribution déposé à côté de index.html (facultatif).
+        'envois' => array_map(fn ($v) => array_intersect_key($v, array_flip(['transporteur', 'statut', 'numero', 'message', 'maj_le'])), envois()),
+        'robot_transporteurs' => ROBOT_TRANSPORTEURS,
         'logo' => array_values(array_filter(['logo.svg', 'logo.png', 'logo.jpg'], fn ($f) => is_file(__DIR__ . "/$f")))[0] ?? null,
     ];
 }
@@ -183,6 +195,47 @@ if ($action === 'connexion' && $methode === 'POST') {
     repondre(200, ['ok' => true]);
 }
 
+// ---------- Robot (création des expéditions chez les transporteurs) ----------
+// Le robot tourne sur un autre serveur ; il s'identifie par un jeton (config.php, en-tête X-Jeton-Robot), pas par le cookie.
+if (str_starts_with($action, 'robot_')) {
+    $jetonRobot = (string) ($C['jeton_robot'] ?? '');
+    if (strlen($jetonRobot) < 24 || !hash_equals($jetonRobot, (string) ($_SERVER['HTTP_X_JETON_ROBOT'] ?? ''))) { sleep(1); repondre(401, ['erreur' => 'auth']); }
+    if ($action === 'robot_a_faire') {
+        // Expéditions à créer ; une prise de plus de 20 minutes sans réponse est reprise.
+        $liste = avecVerrou(function () {
+            global $DATA;
+            $env = envois();
+            $liste = [];
+            foreach ($env as $num => &$v) {
+                $reprise = $v['statut'] === 'en_cours' && strtotime((string) ($v['pris_le'] ?? '')) < time() - 1200;
+                if ($v['statut'] !== 'en_attente' && !$reprise) continue;
+                $v['statut'] = 'en_cours';
+                $v['pris_le'] = date('c');
+                $liste[] = $v['donnees'];
+            }
+            unset($v);
+            if ($liste) ecrireJson("$DATA/envois.json", $env);
+            return $liste;
+        });
+        repondre(200, ['expeditions' => $liste]);
+    }
+    if ($action === 'robot_resultat' && $methode === 'POST') {
+        avecVerrou(function () use ($entree) {
+            global $DATA;
+            $env = envois();
+            $num = (string) ($entree['num'] ?? '');
+            if (!isset($env[$num])) erreur('Expédition inconnue.', 404);
+            $statut = (string) ($entree['statut'] ?? '');
+            if (!in_array($statut, ['cree', 'erreur'], true)) erreur('Statut inconnu.');
+            $env[$num] = array_merge($env[$num], ['statut' => $statut, 'numero' => mb_substr((string) ($entree['numero'] ?? ''), 0, 40),
+                'message' => mb_substr((string) ($entree['message'] ?? ''), 0, 300), 'maj_le' => date('c')]);
+            ecrireJson("$DATA/envois.json", $env);
+        });
+        repondre(200, ['ok' => true]);
+    }
+    repondre(404, ['erreur' => 'action']);
+}
+
 if (!estConnecte($C)) repondre(401, ['erreur' => 'auth']);
 
 try {
@@ -234,6 +287,30 @@ try {
             if ($methode !== 'POST') break;
             avecVerrou(fn () => @unlink("$DATA/lot.json"));
             repondre(200, etat());
+
+        case 'envoyer':
+            // Bouton « Créer les expéditions chez les transporteurs » : met en file d'attente du robot les expéditions
+            // attribuées à un transporteur qu'il gère, sauf celles déjà créées ou en cours.
+            if ($methode !== 'POST') break;
+            $n = avecVerrou(function () {
+                global $DATA;
+                $lot = lotEnCours() ?? erreur('Aucun export importé.');
+                $calcul = calculLot($lot, reglages());
+                if ($calcul['blocages']) erreur('Calcul bloqué : ' . $calcul['blocages'][0]);
+                $env = envois();
+                $n = 0;
+                foreach ($calcul['expeditions'] as $e) {
+                    if (!$e['choix'] || !in_array($e['choix'], ROBOT_TRANSPORTEURS, true)) continue;
+                    $v = $env[$e['num']] ?? null;
+                    if ($v && $v['transporteur'] === $e['choix'] && in_array($v['statut'], ['en_attente', 'en_cours', 'cree'], true)) continue;
+                    $env[$e['num']] = ['transporteur' => $e['choix'], 'statut' => 'en_attente', 'numero' => '', 'message' => '',
+                        'demande_le' => date('c'), 'maj_le' => date('c'), 'donnees' => donneesRobot($e)];
+                    $n++;
+                }
+                ecrireJson("$DATA/envois.json", $env);
+                return $n;
+            });
+            repondre(200, ['mis_en_file' => $n] + etat());
 
         case 'enregistrer':
             if ($methode !== 'POST') break;

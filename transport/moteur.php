@@ -852,3 +852,22 @@ function recapCsv(array $recap, string $mois): string
     $l[] = "$mois;Tous;Tous;{$a['nb']};{$a['palettes']};" . $n($a['poids']) . ';' . $n($a['total']) . ';' . $n($a['ht']) . ';' . ($a['taux'] === null ? '' : $n($a['taux']));
     return mb_convert_encoding(implode("\r\n", $l) . "\r\n", 'Windows-1252', 'UTF-8');
 }
+
+// ---------- Création des expéditions chez les transporteurs (robot) ----------
+
+// Transporteurs dont le robot sait créer les expéditions sur le site (les autres viendront ensuite).
+const ROBOT_TRANSPORTEURS = ['XPO'];
+
+// Ce que le robot saisit sur le site du transporteur pour une expédition attribuée.
+function donneesRobot(array $e): array
+{
+    return [
+        'num' => $e['num'], 'transporteur' => $e['choix'], 'date' => $e['date'], 'refs' => $e['refs'],
+        'dest' => ['nom' => $e['dest']['nom'], 'complement' => $e['dest']['complement'], 'adresse1' => $e['dest']['adresse1'],
+            'adresse2' => $e['dest']['adresse2'], 'cp' => $e['dest']['cp'], 'ville' => $e['dest']['ville'], 'pays' => 'FR'],
+        'palettes' => nbPalettes($e['palettes']), 'places' => placesXpo($e['palettes']),
+        'detail_palettes' => array_filter(array_intersect_key($e['palettes'], PALETTES)),
+        'hauteur' => $e['palettes']['hauteur'], 'poids' => (int) ceil($e['poids']),
+        'consignes' => trim((string) preg_replace('/\s+/', ' ', $e['consignes'])), 'rdv' => $e['rdv'],
+    ];
+}

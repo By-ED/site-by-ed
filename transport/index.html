@@ -104,6 +104,10 @@ td.retenu{background:var(--marque-douce);border-left:4px solid var(--accent);min
 .retenu .petit{margin-top:3px}
 .retenu select{margin-top:6px;font-size:13px}
 .ok-txt{color:var(--ok);font-weight:600}
+.etat-envoi{margin-top:6px;font-size:13px;font-weight:700;padding:3px 8px;border-radius:5px;display:inline-block}
+.etat-envoi.envoi{background:var(--sunk);color:var(--muted)}
+.etat-envoi.cree{background:var(--ok-soft);color:var(--ok)}
+.etat-envoi.erreur-envoi{background:var(--bad-soft);color:var(--bad)}
 .force-txt{color:var(--warn);font-weight:600}
 .a-completer{color:var(--bad);font-weight:700;font-size:15px}
 ul.compar{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:14px;min-width:230px}
@@ -386,9 +390,25 @@ function vueDeparts(){
         const nom = await telecharger("type=flowone"); await chargerEtat(); S.message = "Fichier " + nom + " téléchargé, à réimporter dans FLOW ONE ; la journée est enregistrée dans l'historique.";
       })}, "Retour FLOW ONE"),
       h("span", {class:"sep"}),
+      boutonEnvoi(lot, attribuees),
       h("button", {type:"button", class:"btn", disabled:S.occupe || !!lot.blocages.length || !attribuees.length, onclick:() => agir(async () => {
         const d = await api("enregistrer", {}); S.etat = d; S.message = pluriel(d.enregistrees, "expédition enregistrée", "expéditions enregistrées") + " dans l'historique.";
       })}, "Enregistrer dans l'historique")));
+}
+
+// « Créer chez les transporteurs » : le robot (sur son serveur) crée les expéditions sur les sites ;
+// il ne reste qu'à imprimer les étiquettes. Seulement pour les transporteurs que le robot sait gérer.
+function boutonEnvoi(lot, attribuees){
+  const geres = S.etat.robot_transporteurs || [];
+  const envois = S.etat.envois || {};
+  const aEnvoyer = attribuees.filter(e => geres.includes(e.choix) && !(envois[e.num] && envois[e.num].transporteur === e.choix && ["en_attente", "en_cours", "cree"].includes(envois[e.num].statut)));
+  if (!geres.length) return null;
+  return h("button", {type:"button", class:"btn primaire", disabled:S.occupe || !!lot.blocages.length || !aEnvoyer.length,
+    title:"Transporteurs gérés par le robot : " + geres.join(", "),
+    onclick:() => { if (confirm("Créer " + pluriel(aEnvoyer.length, "expédition", "expéditions") + " chez " + geres.join(", ") + " ?")) agir(async () => {
+      const d = await api("envoyer", {}); S.etat = d;
+      S.message = pluriel(d.mis_en_file, "expédition confiée", "expéditions confiées") + " au robot. Les étiquettes seront prêtes dans Station Chargeur (Encours) dans quelques minutes.";
+    }); }}, "Créer chez les transporteurs (" + aEnvoyer.length + ")");
 }
 
 // Moyenne au-dessus de l'objectif : une seule ligne ; la liste des expéditions qui la font monter (les plus coûteuses d'abord)
@@ -402,6 +422,16 @@ function alertesMoyennes(lot){
     h("summary", {}, h("strong", {}, "Moyenne au-dessus de " + nb(max, 1) + " %"), " — voir les expéditions qui la font monter"),
     periodes.map(([lib, x]) => h("div", {style:"margin-top:8px"}, h("strong", {}, lib + " : " + pct(x.taux)),
       h("ul", {}, x.responsables.map(r => h("li", {}, h("span", {class:"num"}, r.num), " · " + r.client + " · ", h("strong", {}, pct(r.taux)), " · " + eur(r.surcout) + " au-dessus de " + nb(max, 1) + " %"))))));
+}
+
+// Où en est la création de l'expédition chez le transporteur (robot).
+const ENVOI = {en_attente:["envoi", "En file d'attente"], en_cours:["envoi", "Création en cours…"], cree:["cree", "Créée chez "], erreur:["erreur-envoi", "Erreur : "]};
+function etatEnvoi(e){
+  const v = (S.etat.envois || {})[e.num];
+  if (!v || v.transporteur !== e.choix) return null;
+  const [cls, lib] = ENVOI[v.statut] || ["envoi", v.statut];
+  const txt = v.statut === "cree" ? lib + v.transporteur + (v.numero ? " · n° " + v.numero : "") : v.statut === "erreur" ? lib + (v.message || "voir le robot") : lib;
+  return h("div", {class:"etat-envoi " + cls}, txt);
 }
 
 function ligneExpedition(e, lot){
@@ -426,6 +456,7 @@ function ligneExpedition(e, lot){
       e.choix === e.moins_cher ? h("div", {class:"petit ok-txt"}, "✓ le moins cher")
         : h("div", {class:"petit force-txt"}, "Imposé : " + e.moins_cher + " coûtait " + eur(e.total - e.offres[e.moins_cher].total) + " de moins"),
       h("div", {class:"petit"}, "Taux ", h("span", {class:"taux" + (e.au_dessus ? " haut" : "")}, pct(e.taux)), e.au_dessus ? h("span", {class:"muted"}, " (repère " + nb(e.seuil, 1) + " %)") : null),
+      etatEnvoi(e),
       valides.length > 1 ? h("select", {"aria-label":"Changer de transporteur — " + e.num, "data-k":e.num + ":force", onchange:ev => saisir(e.num, {force:ev.target.value || null})},
         h("option", {value:"", selected:!s.force}, "Garder le moins cher"),
         valides.filter(t => t !== e.moins_cher).map(t => h("option", {value:t, selected:s.force === t}, "Imposer " + t + " (" + eur(e.offres[t].total) + ")"))) : null,
