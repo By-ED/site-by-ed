@@ -100,6 +100,8 @@ Règles (validées par le propriétaire) :
   XPO région parisienne : majoration appliquée une seule fois sur les 8 départements « + taxe Paris et RP », Paris compris (confirmé).
 - Taux = prix du transport / ORDHTBASETOTAL. Moyenne pondérée du jour et du mois ; alerte au-dessus de 3,5 %.
   Repère par expédition 3,5 %, 5 % en Bretagne, Sud-Ouest, Sud-Est (listes modifiables).
+- Piste d'économie (détail de la ligne) : autre répartition des palettes, même volume, toutes à la même hauteur,
+  dans les limites de chaque transporteur ; affichée seulement si elle fait gagner au moins 5 € (`ECONOMIE_MIN`, confirmé). Ne change jamais le choix.
 - Retour FLOW ONE : l'export d'origine octet pour octet ; seuls DEOCARRIER, CARRIERDESIGNATION et les colonnes de la table
   de correspondance changent (contrôle avant export). Bons groupés : prix, poids et palettes sur le bon principal, 0 sur les autres.
   Sens de DEONUMERIC01 à 06 : pas encore donné par le propriétaire, ne jamais le deviner.
