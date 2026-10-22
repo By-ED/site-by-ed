@@ -23,6 +23,7 @@ const NIVEAU_DESC = [
     3 => 'DIFFICILE : détails fins, valeurs chiffrées précises, pièges subtils (inversions, chiffres modifiés, notions proches confondues), raisonnement ou calcul si le cours s\'y prête.',
 ];
 const TEXTE_MAX = 230000;
+const CARTES_MAX = 80;
 const IMAGES_MAX = 6;
 
 if (!is_file(__DIR__ . '/config.php')) {
@@ -82,6 +83,7 @@ function idValide(mixed $id): string
 function cheminCours(string $id): string { global $DATA; return "$DATA/cours/$id.json"; }
 function cheminQuestions(string $id): string { global $DATA; return "$DATA/questions/$id.json"; }
 function cheminSource(string $id): string { global $DATA; return "$DATA/sources/$id.txt"; }
+function cheminCartes(string $id): string { global $DATA; return "$DATA/cartes/$id.json"; }
 
 function chargerCours(string $id): array
 {
@@ -312,6 +314,17 @@ function schemaPlanMix(): array
     return ['type' => 'object', 'properties' => ['mix' => schemaMix()], 'required' => ['mix'], 'additionalProperties' => false];
 }
 
+function schemaCartes(): array
+{
+    $carte = [
+        'type' => 'object',
+        'properties' => ['recto' => ['type' => 'string'], 'verso' => ['type' => 'string']],
+        'required' => ['recto', 'verso'],
+        'additionalProperties' => false,
+    ];
+    return ['type' => 'object', 'properties' => ['cartes' => ['type' => 'array', 'items' => $carte]], 'required' => ['cartes'], 'additionalProperties' => false];
+}
+
 function schemaLot(): array
 {
     $prop = [
@@ -411,6 +424,21 @@ function consigneVisuels(array $pages): string
         . "Commence chaque page par « [Page …] » avec son numéro. Si une page n'a aucun élément visuel porteur d'information, écris seulement « [Page …] rien à signaler ».";
 }
 
+function consigneCartes(array $notions): string
+{
+    $liste = $notions ? "\n\nNotions du cours, à couvrir toutes :\n- " . implode("\n- ", $notions) : '';
+    return "Étape demandée : écrire les flashcards de ce cours. Recto : une question ; verso : sa réponse. L'étudiante lit la question, cherche la réponse de tête, puis retourne la carte.\n\n"
+        . "Règles :\n"
+        . "- Les cartes couvrent TOUT le cours, dans l'ordre du cours : définitions, valeurs chiffrées et normes, mécanismes, causes et conséquences, classifications, signes, exceptions, formules, schémas et tableaux.\n"
+        . "- Une carte = une seule notion. Pas de doublon : deux cartes ne demandent jamais la même chose.\n"
+        . "- \"recto\" : une question courte et précise, qui appelle une réponse unique. Elle ne contient pas la réponse. Pas de QCM ni de vrai/faux.\n"
+        . "- \"verso\" : la réponse exacte et courte (1 à 3 lignes), avec les termes, les chiffres et les unités du cours. Pour une liste ou une classification courte, une carte « Citez… » avec tous les éléments au verso.\n"
+        . "- Nombre de cartes : autant qu'il faut pour couvrir toutes les notions, sans remplissage : environ 15 pour un cours court, 25 à 40 pour un cours de longueur normale, jusqu'à 60 pour un cours long et dense.\n"
+        . "- Les schémas et tableaux du cours (y compris la partie « Schémas, tableaux et images » si elle existe) ont leurs cartes.\n"
+        . "- Ignore les anecdotes et histoires racontées par le professeur : aucune carte dessus."
+        . $liste;
+}
+
 const CONSIGNE_TRANSCRIPTION ="Ces images sont des pages ou des photos d'un cours de médecine. Transcris fidèlement TOUT le texte visible, dans l'ordre de lecture : titres, paragraphes, listes, tableaux (ligne par ligne, cellules séparées par « | »), légendes et annotations des schémas, valeurs chiffrées et unités. Pour un schéma sans texte qui apporte une information, décris-le en une ligne entre crochets. Ne résume pas, n'ajoute rien. Sépare les images par une ligne « --- ».";
 
 function specsPour(int $n): array
@@ -485,11 +513,11 @@ function normaliserQuestion(mixed $r, int $niveau, int $serie): ?array
         'enonce' => $enonce, 'propositions' => $props, 'a_retenir' => mb_substr(trim((string) ($r['a_retenir'] ?? '')), 0, 600)];
 }
 
-function compteurQuestions(int $total): callable
+function compteurQuestions(int $total, string $cle = '"enonce"'): callable
 {
     $dernier = -1;
-    return function (string $texte) use (&$dernier, $total) {
-        $k = min(max(substr_count($texte, '"enonce"'), 1), $total);
+    return function (string $texte) use (&$dernier, $total, $cle) {
+        $k = min(max(substr_count($texte, $cle), 1), $total);
         if ($k !== $dernier) { $dernier = $k; envoyer(['progres' => $k]); }
     };
 }
@@ -505,7 +533,7 @@ if ($methode === 'POST') {
     if (!is_array($entree)) repondre(400, ['erreur' => 'format']);
 }
 
-foreach (['cours', 'questions', 'sources', 'verrous'] as $d) if (!is_dir("$DATA/$d")) @mkdir("$DATA/$d", 0775, true);
+foreach (['cours', 'questions', 'sources', 'cartes', 'verrous'] as $d) if (!is_dir("$DATA/$d")) @mkdir("$DATA/$d", 0775, true);
 if (!is_writable("$DATA/cours")) repondre(500, ['erreur' => 'droits', 'message' => 'Le dossier data/ n\'est pas accessible en écriture.']);
 
 if ($action === 'connexion' && $methode === 'POST') {
@@ -533,7 +561,8 @@ switch ($action) {
 
     case 'questions':
         $id = idValide($_GET['id'] ?? null);
-        repondre(200, ['questions' => lireJson(cheminQuestions($id), ['questions' => []])['questions']]);
+        repondre(200, ['questions' => lireJson(cheminQuestions($id), ['questions' => []])['questions'],
+            'cartes' => lireJson(cheminCartes($id), ['cartes' => []])['cartes']]);
 
     case 'cours_creer':
         $texte = trim((string) ($entree['texte'] ?? ''));
@@ -691,6 +720,43 @@ switch ($action) {
         envoyer(['fin' => ['ajoutees' => count($nouvelles), 'cours' => ['id' => $id] + $cours]]);
         exit;
 
+    case 'cartes_creer':
+        // Flashcards du cours (question au recto, réponse au verso), en un seul appel ; comptées dans le coût de la création.
+        $id = idValide($entree['id'] ?? null);
+        $cours = chargerCours($id);
+        if (($cours['cartesStatut'] ?? '') === 'ok') repondre(200, ['fin' => ['cartes' => $cours['nbCartes'] ?? 0, 'cours' => ['id' => $id] + $cours]]);
+        if (($cours['cartesStatut'] ?? '') === 'en_cours' && time() - (int) ($cours['cartesDebut'] ?? 0) < 900) repondre(409, ['erreur' => 'deja_en_cours']);
+        $source = (string) @file_get_contents(cheminSource($id));
+        if ($source === '') repondre(409, ['erreur' => 'source_absente']);
+        $marquerCartes = function (string $statut, array $cartes = []) use ($id) {
+            return avecVerrou($id, function () use ($id, $statut, $cartes) {
+                $c = chargerCours($id);
+                if ($cartes) ecrireJson(cheminCartes($id), ['cartes' => $cartes]);
+                $c['cartesStatut'] = $statut;
+                if ($statut === 'en_cours') $c['cartesDebut'] = time();
+                if ($cartes) $c['nbCartes'] = count($cartes);
+                ecrireJson(cheminCours($id), $c);
+                return $c;
+            });
+        };
+        $marquerCartes('en_cours');
+        ouvrirFlux();
+        $termine = false;
+        register_shutdown_function(function () use (&$termine, $marquerCartes) { if (!$termine) $marquerCartes('echec'); });
+        $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneCartes($cours['notions'] ?? [])]], schemaCartes(),
+            (string) ($C['effort'] ?? 'high'), 32000, compteurQuestions(CARTES_MAX, '"recto"'), $id, 1), true);
+        $cartes = [];
+        foreach (array_slice((array) ($brut['cartes'] ?? []), 0, CARTES_MAX) as $k) {
+            $recto = is_array($k) ? mb_substr(trim((string) ($k['recto'] ?? '')), 0, 400) : '';
+            $verso = is_array($k) ? mb_substr(trim((string) ($k['verso'] ?? '')), 0, 800) : '';
+            if ($recto !== '' && $verso !== '') $cartes[] = ['id' => 'k' . bin2hex(random_bytes(5)), 'recto' => $recto, 'verso' => $verso];
+        }
+        if (!$cartes) finirEnErreur('invalid_json');
+        $cours = $marquerCartes('ok', $cartes);
+        $termine = true;
+        envoyer(['fin' => ['cartes' => count($cartes), 'cours' => ['id' => $id] + $cours]]);
+        exit;
+
     case 'progres':
         $id = (string) ($entree['id'] ?? '');
         if ($id !== 'demo') idValide($id);
@@ -698,7 +764,9 @@ switch ($action) {
         if (!is_array($p) || !is_array($p['tentatives'] ?? null) || strlen(json_encode($p)) > 200000) repondre(400, ['erreur' => 'format']);
         avecVerrou('progres', function () use ($DATA, $id, $p) {
             $tout = lireJson("$DATA/progres.json", []);
-            $tout[$id] = ['tentatives' => array_slice($p['tentatives'], -200), 'dernier' => (object) ($p['dernier'] ?? [])];
+            // cartes : dernier résultat de chaque flashcard (1 = sue, 0 = à revoir) ; gardé si le navigateur ne l'envoie pas.
+            $cartes = is_array($p['cartes'] ?? null) ? $p['cartes'] : ($tout[$id]['cartes'] ?? []);
+            $tout[$id] = ['tentatives' => array_slice($p['tentatives'], -200), 'dernier' => (object) ($p['dernier'] ?? []), 'cartes' => (object) $cartes];
             ecrireJson("$DATA/progres.json", $tout);
         });
         repondre(200, ['ok' => true]);
@@ -709,6 +777,7 @@ switch ($action) {
             @unlink(cheminCours($id));
             @unlink(cheminQuestions($id));
             @unlink(cheminSource($id));
+            @unlink(cheminCartes($id));
         });
         avecVerrou('progres', function () use ($DATA, $id) {
             $tout = lireJson("$DATA/progres.json", []);

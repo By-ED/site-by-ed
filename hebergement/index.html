@@ -150,6 +150,14 @@ th.num{text-align:right}
 .barre-action{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);margin-top:-6px}
 .astuce{font-size:13px;color:var(--muted)}
 @media (hover:none){.astuce{display:none}}
+/* flashcards */
+.carte{display:grid;gap:10px;align-content:start;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:20px 18px;min-height:220px}
+.carte.recto{cursor:pointer}
+.carte.recto:hover{border-color:var(--accent)}
+.carte-q{font-family:var(--f-body);font-size:21px;line-height:1.4;font-weight:700;margin:0;display:block;overflow-wrap:anywhere}
+.carte-r{font-size:18px;line-height:1.5;white-space:pre-line;overflow-wrap:anywhere;border-top:1px dashed var(--accent);padding-top:12px}
+.carte .eyebrow{color:var(--accent)}
+.btn.revoir{border-color:var(--warn);color:var(--warn)}
 /* bilan */
 .bilan{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
 .bigscore{font-family:var(--f-display);font-weight:800;font-size:clamp(46px,12vw,68px);line-height:1;font-variant-numeric:tabular-nums}
@@ -194,6 +202,7 @@ input[type=file]{font:inherit;max-width:100%}
   .expl{padding-left:14px}
   .enonce{font-size:18px}
   .prop-txt{font-size:16px}
+  .carte-q{font-size:19px}
 }
 .carte-connexion{max-width:420px}
 </style>
@@ -268,7 +277,7 @@ const DEMO = {
 // ---------- État ----------
 const S = {
   vue:"chargement", cours:[], progres:{}, usage:null, questionsCache:{}, coursId:null, mode:"entrainement",
-  quiz:null, gen:null, ajout:null, confirmSuppr:null, confirmSerie:null, confirmMix:null, serie:null, toutVoir:false, erreurPage:null, sauvegarde:null, erreurCode:null
+  quiz:null, gen:null, ajout:null, confirmSuppr:null, confirmSerie:null, confirmMix:null, confirmCartes:null, flash:null, cartesCache:{}, serie:null, toutVoir:false, erreurPage:null, sauvegarde:null, erreurCode:null
 };
 S.ajout = nouvelAjout();
 function nouvelAjout(){ return {fichiers:[], texte:"", matiere:"", titre:""}; }
@@ -367,7 +376,7 @@ async function demarrer(){
 }
 
 // ---------- Rendu ----------
-const VUES = {chargement:vueChargement, connexion:vueConnexion, accueil:vueAccueil, cours:vueCours, ajout:vueAjout, generation:vueGeneration, quiz:vueQuiz, fin:vueFin};
+const VUES = {chargement:vueChargement, connexion:vueConnexion, accueil:vueAccueil, cours:vueCours, ajout:vueAjout, generation:vueGeneration, quiz:vueQuiz, fin:vueFin, cartes:vueCartes};
 function render(){
   const k = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
   $app.replaceChildren((VUES[S.vue] || vueAccueil)());
@@ -415,7 +424,7 @@ function vueAccueil(){
   const dus = [];
   for (const c of cours) for (const j of jalons(c)) if (j.etat === "du") dus.push({c, j});
   const e = entete();
-  e.append(h("p", {class:"lede"}, "Chaque cours devient une série de QCM en trois niveaux plus un Mix, à refaire à J7, J14 et J28. Chaque proposition est corrigée : tu révises sans rouvrir le cours."));
+  e.append(h("p", {class:"lede"}, "Chaque cours devient une série de QCM en trois niveaux plus un Mix, et un paquet de flashcards, à refaire à J7, J14 et J28. Chaque proposition est corrigée : tu révises sans rouvrir le cours."));
   return h("div", {class:"vue"}, e,
     S.erreurPage ? h("p", {class:"alerte"}, S.erreurPage) : null,
     h("div", {class:"ajout-cta"},
@@ -461,9 +470,9 @@ function pied(){
 const coursCourant = () => S.coursId === "demo" ? DEMO : S.cours.find(c => c.id === S.coursId);
 const questionsDe = (id) => id === "demo" ? DEMO.questions : S.questionsCache[id];
 async function ouvrirCours(id){
-  aller("cours", {coursId:id, confirmSuppr:null, confirmSerie:null, confirmMix:null, serie:null});
+  aller("cours", {coursId:id, confirmSuppr:null, confirmSerie:null, confirmMix:null, confirmCartes:null, serie:null});
   if (id !== "demo" && !S.questionsCache[id]){
-    try { S.questionsCache[id] = (await api("questions", undefined, "&id=" + encodeURIComponent(id))).questions; }
+    try { const d = await api("questions", undefined, "&id=" + encodeURIComponent(id)); S.questionsCache[id] = d.questions; S.cartesCache[id] = d.cartes || []; }
     catch (e){ if (e.code !== "auth") S.erreurPage = "Les questions n'ont pas pu être chargées. Recharge la page."; }
     if (S.vue === "cours" && S.coursId === id) render();
   }
@@ -527,10 +536,38 @@ function vueCours(){
         h("div", {class:"actions"},
           h("button", {class:"btn primaire", type:"button", onclick:() => ajouterMix(c, serieMix)}, "Créer le Mix"),
           h("button", {class:"btn", type:"button", onclick:() => { S.confirmMix = null; render(); }}, "Annuler"))) : null),
+    c.demo ? null : blocCartes(c, prog, genActive),
     c.notions && c.notions.length ? h("details", {class:"notions"}, h("summary", {}, "Notions couvertes (" + c.notions.length + ")"), h("ul", {}, c.notions.map(n => h("li", {}, n)))) : null,
     !c.demo && c.statut === "pret" && !genActive ? blocNouvelles(c) : null,
     historique(c, prog),
     c.demo ? null : suppression(c));
+}
+function blocCartes(c, prog, genActive){
+  const cartes = S.cartesCache[c.id];
+  if (!cartes) return null;
+  if (!cartes.length){
+    if (genActive || c.statut === "analyse") return null;
+    if (S.confirmCartes !== c.id) return h("section", {class:"sec"},
+      h("h2", {}, "Flashcards"),
+      h("p", {class:"muted petit"}, "Question au recto, réponse au dos, sur toutes les notions du cours."),
+      h("button", {class:"btn", type:"button", onclick:() => { S.confirmCartes = c.id; render(); }}, "Créer les flashcards"));
+    return h("section", {class:"sec"},
+      h("h2", {}, "Flashcards"),
+      h("div", {class:"note"},
+        h("p", {}, "Claude écrit des cartes question / réponse sur toutes les notions du cours. Compte 1 à 2 minutes, et quelques centimes."),
+        h("div", {class:"actions"},
+          h("button", {class:"btn primaire", type:"button", onclick:() => creerFlashcards(c)}, "Créer les flashcards"),
+          h("button", {class:"btn", type:"button", onclick:() => { S.confirmCartes = null; render(); }}, "Annuler"))));
+  }
+  const res = prog.cartes || {};
+  const aRevoir = cartes.filter(k => res[k.id] === 0), sues = cartes.filter(k => res[k.id] === 1).length;
+  const depart = (titre, sous, liste, primaire) => h("button", {class:"btn depart" + (primaire ? " primaire" : ""), type:"button", disabled:!liste.length || null, onclick:() => demarrerCartes(c, liste)}, h("span", {}, titre), h("small", {}, sous));
+  return h("section", {class:"sec serie"},
+    h("h2", {}, "Flashcards", h("span", {class:"compte"}, String(cartes.length))),
+    h("p", {class:"muted petit"}, "Lis la question, réponds de tête, retourne la carte puis dis si tu savais. " + sues + " " + pluriel(sues, "sue", "sues") + " · " + aRevoir.length + " à revoir · " + (cartes.length - sues - aRevoir.length) + " jamais vues."),
+    h("div", {class:"departs"},
+      depart("Toutes les cartes", cartes.length + " cartes", cartes, true),
+      depart("À revoir", aRevoir.length ? aRevoir.length + " à revoir" : "aucune pour l'instant", aRevoir)));
 }
 function ligneCouts(couts){
   const series = Object.keys(couts).map(Number).filter(n => couts[n] > 0).sort((a, b) => a - b);
@@ -619,7 +656,7 @@ async function enregistrer(Q){
   if (!rep.length || Q.enregistre) return;
   Q.enregistre = true;
   const ancien = S.progres[Q.coursId] || {};
-  const p = {tentatives:(ancien.tentatives || []).slice(-199), dernier:Object.assign({}, ancien.dernier || {})};
+  const p = {tentatives:(ancien.tentatives || []).slice(-199), dernier:Object.assign({}, ancien.dernier || {}), cartes:Object.assign({}, ancien.cartes || {})};
   const par = {};
   for (const x of rep){ const n = String(x.q.niveau); par[n] = par[n] || {p:0, m:0}; par[n].p = round2(par[n].p + x.points); par[n].m++; p.dernier[x.q.id] = x.points; }
   p.tentatives.push({date:new Date().toISOString(), mode:Q.mode, portee:Q.portee, points:round2(rep.reduce((s, x) => s + x.points, 0)), max:rep.length, parNiveau:par});
@@ -674,6 +711,83 @@ function vueQuiz(){
         : h("button", {class:"btn primaire", type:"button", "data-k":"suivante", onclick:suivante}, dernier ? "Voir mon résultat" : "Question suivante"),
       h("span", {class:"astuce"}, "Clavier : touches A à E pour cocher, Entrée pour valider")));
 }
+// ----- Flashcards -----
+// Une carte « à revoir » repasse en fin de paquet jusqu'à ce qu'elle soit sue ; son résultat enregistré reste « à revoir ».
+function demarrerCartes(c, liste){
+  if (!liste.length) return;
+  S.flash = {coursId:c.id, titre:c.titre, file:shuffle(liste), total:liste.length, retournee:false, resultats:{}, sauves:0};
+  aller("cartes");
+}
+function retourner(){ if (!S.flash.retournee){ S.flash.retournee = true; render(); } }
+function noterCarte(savais){
+  const F = S.flash;
+  if (!F.retournee || !F.file.length) return;
+  const k = F.file.shift();
+  if (!savais){ F.resultats[k.id] = 0; F.file.push(k); }
+  else if (!(k.id in F.resultats)) F.resultats[k.id] = 1;
+  F.retournee = false;
+  if (!F.file.length) enregistrerCartes(F);
+  render(); window.scrollTo(0, 0);
+}
+async function enregistrerCartes(F){
+  const n = Object.keys(F.resultats).length;
+  if (!n || n === F.sauves) return;
+  F.sauves = n;
+  const ancien = S.progres[F.coursId] || {};
+  const p = {tentatives:ancien.tentatives || [], dernier:ancien.dernier || {}, cartes:Object.assign({}, ancien.cartes || {}, F.resultats)};
+  S.progres = Object.assign({}, S.progres, {[F.coursId]:p});
+  try { await api("progres", {id:F.coursId, progres:p}); F.erreurSauvegarde = false; }
+  catch { F.erreurSauvegarde = true; F.sauves = 0; }
+  if (S.vue === "cartes") render();
+}
+function quitterCartes(){ enregistrerCartes(S.flash); ouvrirCours(S.flash.coursId); }
+document.addEventListener("visibilitychange", () => { if (document.hidden && S.vue === "cartes") enregistrerCartes(S.flash); });
+function vueCartes(){
+  const F = S.flash, k = F.file[0];
+  const nRevoir = Object.values(F.resultats).filter(x => x === 0).length;
+  const sues = F.total - F.file.length;
+  if (!k){
+    const ratees = F.total ? Object.keys(F.resultats).filter(id => F.resultats[id] === 0) : [];
+    const cartes = S.cartesCache[F.coursId] || [];
+    const c = S.cours.find(x => x.id === F.coursId);
+    return h("div", {class:"vue"},
+      h("p", {class:"eyebrow"}, F.titre + " · flashcards"),
+      h("div", {class:"bilan"},
+        h("p", {class:"bigscore"}, String(F.total - ratees.length), h("span", {class:"sur"}, " / " + F.total)),
+        h("p", {class:"sur20"}, "sues du premier coup"),
+        h("p", {class:"muted petit"}, ratees.length ? ratees.length + " " + pluriel(ratees.length, "carte reste", "cartes restent") + " à revoir la prochaine fois." : "Aucune carte à revoir."),
+        F.erreurSauvegarde ? h("p", {class:"muted petit"}, "Le résultat n'a pas pu être enregistré (connexion ?).") : null),
+      h("div", {class:"actions"},
+        c && ratees.length ? h("button", {class:"btn primaire", type:"button", onclick:() => demarrerCartes(c, cartes.filter(x => ratees.includes(x.id)))}, "Revoir les " + ratees.length + " " + pluriel(ratees.length, "carte ratée", "cartes ratées")) : null,
+        h("button", {class:"btn", type:"button", onclick:() => ouvrirCours(F.coursId)}, "Retour au cours")));
+  }
+  const barre = h("i"); barre.style.width = (sues / F.total * 100) + "%";
+  return h("div", {class:"vue"},
+    h("div", {class:"q-top"},
+      h("button", {class:"lien", type:"button", onclick:quitterCartes}, "Quitter"),
+      h("span", {class:"q-count"}, sues + " / " + F.total + " " + pluriel(sues, "sue", "sues")),
+      h("span", {}, nRevoir + " à revoir")),
+    h("div", {class:"progress"}, barre),
+    h("article", {class:"carte" + (F.retournee ? "" : " recto"), onclick:F.retournee ? null : retourner},
+      h("p", {class:"eyebrow"}, "Question"),
+      h("h2", {class:"carte-q"}, k.recto),
+      F.retournee ? h("div", {class:"carte-r"}, h("p", {class:"eyebrow"}, "Réponse"), h("p", {}, k.verso)) : null),
+    h("div", {class:"barre-action"},
+      !F.retournee
+        ? h("button", {class:"btn primaire", type:"button", "data-k":"retourner", onclick:retourner}, "Voir la réponse")
+        : [h("button", {class:"btn revoir", type:"button", "data-k":"revoir", onclick:() => noterCarte(false)}, "À revoir"),
+           h("button", {class:"btn primaire", type:"button", "data-k":"savais", onclick:() => noterCarte(true)}, "Je savais")],
+      h("span", {class:"astuce"}, "Clavier : Espace pour retourner, ← à revoir, → je savais")));
+}
+document.addEventListener("keydown", e => {
+  if (S.vue !== "cartes" || e.metaKey || e.ctrlKey || e.altKey || !S.flash.file.length) return;
+  const tag = e.target && e.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if ((e.key === " " || e.key === "Enter") && tag !== "BUTTON" && !S.flash.retournee){ e.preventDefault(); retourner(); }
+  else if (e.key === "ArrowLeft" && S.flash.retournee){ e.preventDefault(); noterCarte(false); }
+  else if (e.key === "ArrowRight" && S.flash.retournee){ e.preventDefault(); noterCarte(true); }
+});
+
 document.addEventListener("keydown", e => {
   if (S.vue !== "quiz" || e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target, tag = t && t.tagName;
@@ -761,7 +875,7 @@ function vueAjout(){
             MATIERES.map(m => h("option", {value:m, selected:a.matiere === m || null}, m)))),
         h("div", {class:"champ"}, h("label", {for:"titre"}, "Titre (facultatif)"),
           h("input", {type:"text", id:"titre", value:a.titre, placeholder:"Repris du cours si vide", oninput:e => { a.titre = e.target.value; }}))),
-      h("p", {class:"note petit"}, "Compte 4 à 10 minutes selon la longueur du cours. Facile, Moyen, Difficile puis Mix (niveaux mélangés), avec le même nombre de questions dans chaque partie : 6 pour un cours court, environ 10 en général, jusqu'à 15 pour un cours long."),
+      h("p", {class:"note petit"}, "Compte 4 à 10 minutes selon la longueur du cours. Facile, Moyen, Difficile puis Mix (niveaux mélangés), avec le même nombre de questions dans chaque partie : 6 pour un cours court, environ 10 en général, jusqu'à 15 pour un cours long. Les flashcards sont créées en même temps."),
       h("div", {class:"actions"}, btn)));
 }
 
@@ -785,6 +899,8 @@ function vueGeneration(){
     g.fini
       ? h("div", {class:"note"},
           g.total ? h("p", {}, g.total + " " + pluriel(g.total, "question créée", "questions créées") + (g.complet ? "." : ". Il en manque : tu pourras compléter depuis la page du cours.")) : null,
+          g.cartes ? h("p", {}, g.cartes + " " + pluriel(g.cartes, "flashcard créée", "flashcards créées") + ".") : null,
+          g.cartesEchec ? h("p", {}, "Les flashcards n'ont pas pu être créées : tu pourras réessayer depuis la page du cours.") : null,
           g.cout ? h("p", {class:"muted petit"}, "Coût de cette création : " + dollars(g.cout)) : null,
           h("div", {class:"actions"},
             g.coursId ? h("button", {class:"btn primaire", type:"button", onclick:() => ouvrirCours(g.coursId)}, "Ouvrir le cours") : null,
@@ -966,6 +1082,7 @@ async function lancerGeneration(){
     S.gen.coursId = id;
     S.ajout = nouvelAjout();
     await planEtLots(id, null, sig);
+    await creerCartes(id, sig);
   } catch (e){
     S.gen.erreur = messageErreur(e);
     for (const x of S.gen.etapes) if (x.etat === "en_cours") x.etat = "echec";
@@ -994,6 +1111,41 @@ async function nouvellesQuestions(c){
   }
   await finGeneration();
 }
+async function creerFlashcards(c){
+  const ctl = new AbortController();
+  S.gen = {etapes:[], ctl, titre:(c.titre || "Cours") + " · flashcards", fini:false, erreur:null, coursId:c.id, total:0, complet:false, serie:1, coutAvant:(c.couts || {})[1] || 0};
+  aller("generation", {confirmCartes:null});
+  try { await creerCartes(c.id, ctl.signal); }
+  catch (e){
+    S.gen.erreur = messageErreur(e);
+    for (const x of S.gen.etapes) if (x.etat === "en_cours") x.etat = "echec";
+  }
+  await finGeneration();
+}
+// Les flashcards, en un seul appel. Un échec ne bloque pas la création du QCM : elles pourront être créées depuis la page du cours.
+async function creerCartes(id, sig){
+  etape("cartes", "Flashcards", "en_cours", "rédaction…");
+  try {
+    let fin;
+    try { fin = await apiFlux("cartes_creer", {id}, k => etape("cartes", null, null, k + " " + pluriel(k, "carte", "cartes")), sig); }
+    catch (e){
+      if (!coupure(e)) throw e;
+      etape("cartes", null, null, "connexion coupée, vérification…");
+      const c = await attendreCours(id, c => {
+        if (c.cartesStatut === "echec") throw {code:"invalid_json"};
+        return c.cartesStatut === "ok";
+      }, sig);
+      fin = {cartes:c.nbCartes};
+    }
+    S.gen.cartes = fin.cartes;
+    etape("cartes", null, "ok", fin.cartes + " " + pluriel(fin.cartes, "carte", "cartes"));
+  } catch (e){
+    const arrete = sig.aborted || (e && e.code === "cancelled");
+    etape("cartes", null, "echec", arrete ? "arrêté" : "échec");
+    if (arrete || (e && FATAL.has(e.code))) throw e;
+    S.gen.cartesEchec = true;
+  }
+}
 async function ajouterMix(c, serie){
   const ctl = new AbortController();
   S.gen = {etapes:[], ctl, titre:(c.titre || "Cours") + " · Mix", fini:false, erreur:null, coursId:c.id, total:0, complet:false, coutAvant:(c.couts || {})[serie] || 0};
@@ -1007,7 +1159,7 @@ async function ajouterMix(c, serie){
 }
 async function finGeneration(){
   S.gen.fini = true;
-  if (S.gen.coursId) delete S.questionsCache[S.gen.coursId];
+  if (S.gen.coursId){ delete S.questionsCache[S.gen.coursId]; delete S.cartesCache[S.gen.coursId]; }
   try { await chargerEtat(); } catch {}
   const c = S.cours.find(x => x.id === S.gen.coursId);
   if (c && c.couts && S.gen.serie) S.gen.cout = (c.couts[String(S.gen.serie)] || 0) - (S.gen.coutAvant || 0);

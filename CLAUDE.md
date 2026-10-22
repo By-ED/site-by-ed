@@ -26,6 +26,8 @@ Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
   le texte de ces images n'est pas dans la couche texte du PDF.
   Ensuite `cours_creer` → `plan` (notions + `nb_par_rubrique` + liste des questions des 4 rubriques, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
   `mix` ajoute la rubrique Mix à une série créée avant elle (bouton « Ajouter le Mix »).
+  Puis `cartes_creer` écrit les flashcards en un appel (aussi bouton « Créer les flashcards » pour les cours d'avant) ;
+  un échec des cartes ne bloque pas le QCM.
   Les actions longues répondent en NDJSON (`{"progres":n}` puis `{"fin":...}` ou `{"erreur":...}`).
   Le texte du cours est un bloc système mis en cache ; sortie JSON garantie par `output_config.format` ;
   `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`).
@@ -55,6 +57,9 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Modes : entraînement (correction après chaque question) et examen (correction à la fin).
 - Ordre des questions et des propositions remélangé à chaque passage.
 - Historique des scores par cours, bouton « Refaire mes erreurs ».
+- Flashcards : recto = une question, verso = la réponse courte, sur toutes les notions du cours (15 à 60 cartes selon la longueur).
+  Révision simple : « Je savais » / « À revoir » ; une carte ratée repasse en fin de paquet et reste « à revoir » pour la fois suivante.
+  Un seul paquet par cours (pas de séries) ; son coût est compté dans la création.
 - « Nouvelles questions » : nouvelle série sur un cours déjà enregistré (plan avec la liste des angles déjà posés) ;
   l'étudiante choisit Série 1, Série 2… ou Toutes. Champ `serie` sur chaque lot et chaque question (absent = 1).
 
@@ -64,7 +69,8 @@ Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostati
 
 Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots + `couts` : dollars par série, « 1 » = création), `questions/<id>.json`,
 `niveau` 4 = Mix (les items des lots Mix ont un champ `difficulte` 1 à 3, les questions Mix n'en ont pas),
-`sources/<id>.txt`, `progres.json` (une seule élève), `usage.json` (appels du jour, jetons du mois).
+`sources/<id>.txt`, `cartes/<id>.json` (`{cartes: [{id, recto, verso}]}` ; état dans le cours : `cartesStatut`, `nbCartes`),
+`progres.json` (une seule élève ; par cours `tentatives`, `dernier` et `cartes` : `{carteId: 1 sue | 0 à revoir}`), `usage.json` (appels du jour, jetons du mois).
 
 Artifact (base `db`) :
 
