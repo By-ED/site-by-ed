@@ -97,6 +97,7 @@ Règles (validées par le propriétaire) :
 - Grilles au poids (BMV, KUEHNE) : forfaits jusqu'à 100 kg, puis prix aux 100 kg sur le poids arrondi aux 10 kg supérieurs.
   BMV : le prix au kilo continue au-delà de 200 kg ; coefficient « MAJ 01.01 » (révision) appliqué.
   XPO : prix au nombre de places seulement, le poids ne compte pas (confirmé par le propriétaire).
+  XPO région parisienne : majoration appliquée une seule fois sur les 8 départements « + taxe Paris et RP », Paris compris (confirmé).
 - Taux = prix du transport / ORDHTBASETOTAL. Moyenne pondérée du jour et du mois ; alerte au-dessus de 3,5 %.
   Repère par expédition 3,5 %, 5 % en Bretagne, Sud-Ouest, Sud-Est (listes modifiables).
 - Retour FLOW ONE : l'export d'origine octet pour octet ; seuls DEOCARRIER, CARRIERDESIGNATION et les colonnes de la table
