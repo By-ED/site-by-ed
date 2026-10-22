@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Choix du transporteur</title>
+<style>
+/* Outil de bureau : un grand tableau des départs du jour ; les moyennes restent visibles en haut. */
+:root{
+  --bg:#f1f3f5; --surface:#ffffff; --sunk:#e6eaee; --ink:#15202b; --muted:#566573; --line:#cdd5dd;
+  --accent:#1d5c96; --accent-soft:#dce8f4; --on-accent:#ffffff;
+  --ok:#17783a; --ok-soft:#dcefe2; --bad:#b0281d; --bad-soft:#f8dedb; --warn:#8a5300; --warn-soft:#f7e8cd;
+  --f-body:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --surface:#171e24; --sunk:#1f2830; --ink:#e3e9ee; --muted:#9aa8b4; --line:#2e3a44;
+  --accent:#6aa9e0; --accent-soft:#1b3044; --on-accent:#08192a;
+  --ok:#6dd08f; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#3d1c1a; --warn:#efb45c; --warn-soft:#382911;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --surface:#171e24; --sunk:#1f2830; --ink:#e3e9ee; --muted:#9aa8b4; --line:#2e3a44;
+  --accent:#6aa9e0; --accent-soft:#1b3044; --on-accent:#08192a;
+  --ok:#6dd08f; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#3d1c1a; --warn:#efb45c; --warn-soft:#382911;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 80px}
+p{margin:0}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.muted{color:var(--muted)}
+.petit{font-size:13px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.vue{display:grid;gap:18px;padding-top:18px}
+/* en-tête */
+.tete{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-block:10px;display:grid;gap:8px}
+.tete-l1{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;justify-content:space-between}
+.marque{font-weight:800;font-size:18px;letter-spacing:-.01em}
+.marque small{font-weight:500;color:var(--muted);font-size:13px;margin-left:8px}
+.onglets{display:flex;gap:4px;flex-wrap:wrap}
+.onglets button{border:0;background:none;padding:8px 14px;border-radius:6px;font-weight:700;color:var(--muted);cursor:pointer}
+.onglets button[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.bandeau{display:flex;flex-wrap:wrap;gap:8px}
+.indic{display:flex;align-items:baseline;gap:8px;padding:6px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--line)}
+.indic b{font-family:var(--f-mono);font-size:17px}
+.indic.ok b{color:var(--ok)}
+.indic.bad{border-color:var(--bad);background:var(--bad-soft)}
+.indic.bad b{color:var(--bad)}
+.indic small{color:var(--muted);font-size:12px}
+/* boutons, messages */
+.btn{font-weight:700;border-radius:6px;padding:8px 14px;min-height:40px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primaire{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.lien{background:none;border:0;padding:2px 0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.boite{border-radius:var(--r);padding:12px 14px;display:grid;gap:6px}
+.boite ul{margin:0;padding-left:20px;display:grid;gap:2px}
+.boite.rouge{background:var(--bad-soft);color:var(--bad)}
+.boite.orange{background:var(--warn-soft);color:var(--warn)}
+.boite.vert{background:var(--ok-soft);color:var(--ok)}
+.boite.neutre{background:var(--surface);border:1px solid var(--line)}
+.boite strong{font-weight:700}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px}
+.carte h2{font-size:17px}
+.carte h3{font-size:15px}
+.puces{display:flex;flex-wrap:wrap;gap:6px}
+.puce{font-size:13px;padding:3px 9px;border-radius:12px;background:var(--sunk)}
+.puce.bad{background:var(--bad-soft);color:var(--bad)}
+/* tableau des départs */
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;background:var(--surface)}
+td.r,th.r{text-align:right}
+tr.exp > td{border-bottom-color:transparent}
+tr.exp.rouge > td{background:var(--bad-soft)}
+tr.exp.rouge .erreur{color:var(--bad);font-weight:700}
+tr.detail > td{background:var(--sunk);padding:12px}
+.exp-num{font-weight:800;font-family:var(--f-mono)}
+.exp-client{font-weight:600;max-width:260px}
+.exp-lieu{color:var(--muted);font-size:13px}
+input[type=text].mini{font:inherit;font-family:var(--f-mono);width:58px;padding:5px 6px;border:1.5px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);text-align:right}
+input[type=text].mini.saisi{border-color:var(--accent);background:var(--accent-soft)}
+.pal{display:grid;grid-template-columns:auto auto;gap:4px 6px;align-items:center;font-size:12px;color:var(--muted)}
+.pal3{display:grid;grid-template-columns:repeat(3,58px);gap:2px 6px;font-size:11px;color:var(--muted);white-space:nowrap}
+.case{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:4px;cursor:pointer}
+.case input{accent-color:var(--accent)}
+td.offre{min-width:118px;border-left:1px solid var(--line)}
+td.offre .prix{font-family:var(--f-mono);font-size:15px;display:block}
+td.offre small{display:block;color:var(--muted);font-size:12px}
+td.offre.mc .prix::after{content:" ●";color:var(--ok);font-size:11px}
+td.offre.choisi{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+td.offre.exclu{color:var(--muted)}
+td.offre.exclu .ex{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+select{font:inherit;padding:6px 8px;border:1.5px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);max-width:190px}
+.taux{font-family:var(--f-mono);font-weight:700}
+.taux.haut{color:var(--bad);background:var(--bad-soft);padding:1px 5px;border-radius:4px}
+.bascule{border:0;background:none;cursor:pointer;color:var(--accent);font-weight:700;padding:2px 4px}
+.detail-grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.bloc{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;gap:6px;align-content:start;font-size:13px}
+.bloc h4{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.bloc table{font-size:13px}
+.bloc td{padding:3px 0;border:0}
+tr.tot td{border-top:1px solid var(--line);font-weight:700;padding-top:5px}
+.piste{background:var(--ok-soft);color:var(--ok);border-radius:6px;padding:8px 10px;font-size:13px}
+.barre{position:sticky;bottom:0;z-index:4;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line)}
+.barre .sep{flex:1}
+/* formulaires */
+.champs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px}
+.champ{display:grid;gap:4px;min-width:0}
+.champ label{font-weight:600;font-size:13px}
+.champ .aide{font-size:12px;color:var(--muted)}
+input[type=text],input[type=password],textarea{font:inherit;padding:7px 9px;border:1.5px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);width:100%}
+textarea{resize:vertical;min-height:70px;font-family:var(--f-mono);font-size:13px}
+.vide-champ{border-color:var(--bad) !important}
+details.section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+details.section > summary{cursor:pointer;padding:14px 16px;font-weight:700;font-size:16px;list-style-position:inside}
+details.section > .corps{padding:0 16px 16px;display:grid;gap:14px}
+.connexion{max-width:380px;margin:60px auto;display:grid;gap:14px}
+.chargement{padding:40px 0;color:var(--muted)}
+@media (max-width:700px){.marque small{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+"use strict";
+const T = ["BMV", "KUEHNE", "XPO"];
+const S = {vue:"chargement", etat:null, ouverts:{}, occupe:false, message:null, erreur:null, R:null, meta:null, histo:null, importClasseur:null};
+const $app = document.getElementById("app");
+
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs){
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k.slice(0,2) === "on" && typeof v === "function") el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else if (k === "value") el.value = v;
+    else if (k === "checked") el.checked = !!v;
+    else el.setAttribute(k, v === true ? "" : String(v));
+  }
+  const add = (k) => { if (k == null || k === false) return; if (Array.isArray(k)) return k.forEach(add); el.append(k instanceof Node ? k : document.createTextNode(String(k))); };
+  kids.forEach(add);
+  return el;
+}
+const nf = (d) => new Intl.NumberFormat("fr-FR", {minimumFractionDigits:d, maximumFractionDigits:d});
+const eur = (x) => x == null ? "–" : nf(2).format(x) + " €";
+const pct = (x, d = 2) => x == null ? "–" : nf(d).format(x) + " %";
+const nb = (x, d = 2) => x == null ? "" : new Intl.NumberFormat("fr-FR", {maximumFractionDigits:d}).format(x);
+const saisieNb = (x) => x == null ? "" : String(x).replace(".", ",");
+const dateFr = (iso) => iso ? iso.slice(8,10) + "/" + iso.slice(5,7) + "/" + iso.slice(0,4) : "–";
+const quand = (iso) => iso ? new Date(iso).toLocaleString("fr-FR", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) : "";
+const pluriel = (n, s, p) => n + " " + (n > 1 ? p : s);
+
+// ---------- Serveur ----------
+async function api(action, corps, extra){
+  const opts = corps === undefined ? {credentials:"same-origin"} : {method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify(corps)};
+  let r;
+  try { r = await fetch("api.php?a=" + action + (extra || ""), opts); } catch { throw {code:"reseau", message:"Le serveur ne répond pas. Vérifiez la connexion."}; }
+  let d = null; try { d = await r.json(); } catch {}
+  if (r.status === 401 && action !== "connexion"){ S.vue = "connexion"; render(); throw {code:"auth"}; }
+  if (!r.ok || !d) throw {code:(d && d.erreur) || "reseau", message:(d && d.message) || "Le serveur a renvoyé une erreur."};
+  return d;
+}
+function lireBase64(fichier){
+  return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = () => ko(r.error); r.readAsDataURL(fichier); });
+}
+async function telecharger(params){
+  let r;
+  try { r = await fetch("api.php?a=telecharger&" + params, {credentials:"same-origin"}); } catch { throw {message:"Le serveur ne répond pas."}; }
+  if (r.status === 401){ S.vue = "connexion"; render(); throw {code:"auth"}; }
+  if (!r.ok || (r.headers.get("Content-Type") || "").startsWith("application/json")){
+    let d = null; try { d = await r.json(); } catch {}
+    throw {message:(d && d.message) || "Téléchargement impossible."};
+  }
+  const nom = (/filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "") || [])[1] || "fichier.csv";
+  const url = URL.createObjectURL(await r.blob());
+  const a = h("a", {href:url, download:nom}); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  return nom;
+}
+// Exécute les actions une par une, dans l'ordre (une saisie faite pendant l'envoi de la précédente n'est jamais perdue),
+// et affiche le message d'erreur éventuel.
+let file = Promise.resolve();
+function agir(fn){
+  const tache = file.then(async () => {
+    S.occupe = true; S.erreur = null;
+    // Redessine au tour suivant : une saisie validée par Tab doit d'abord laisser le focus passer au champ suivant.
+    setTimeout(() => { if (S.occupe) render(); }, 0);
+    try { await fn(); }
+    catch (e){ if (e && e.code !== "auth") S.erreur = (e && e.message) || "Erreur inattendue."; }
+    finally { S.occupe = false; render(); }
+  });
+  file = tache.catch(() => {});
+  return tache;
+}
+async function chargerEtat(){ S.etat = await api("etat"); }
+
+// ---------- Démarrage ----------
+async function demarrer(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  if (code){
+    history.replaceState(null, "", location.pathname);
+    try { await api("connexion", {code}); } catch {}
+  }
+  try { await chargerEtat(); S.vue = "departs"; render(); }
+  catch (e){ if (e.code !== "auth"){ S.vue = "departs"; S.erreur = e.message; render(); } }
+}
+
+// ---------- Rendu ----------
+const VUES = {chargement:() => h("p", {class:"chargement"}, "Chargement…"), connexion:vueConnexion, departs:vueDeparts, historique:vueHistorique, reglages:vueReglages};
+function render(){
+  // Garde le champ en cours de saisie (focus, texte tapé) quand la page est redessinée après une réponse du serveur.
+  const actif = document.activeElement, k = actif && actif.dataset ? actif.dataset.k : null;
+  const garde = k && actif.tagName === "INPUT" && actif.type === "text" ? {valeur:actif.value, debut:actif.selectionStart, fin:actif.selectionEnd} : null;
+  $app.replaceChildren(S.vue === "connexion" || S.vue === "chargement" ? VUES[S.vue]() : h("div", {}, entete(), VUES[S.vue]()));
+  if (k){
+    const el = $app.querySelector('[data-k="' + CSS.escape(k) + '"]');
+    if (el){ el.focus({preventScroll:true}); if (garde){ el.value = garde.valeur; try { el.setSelectionRange(garde.debut, garde.fin); } catch {} } }
+  }
+}
+async function aller(vue){
+  S.vue = vue; S.erreur = null; S.message = null; render(); window.scrollTo(0, 0);
+  if (vue === "reglages" && !S.R) await agir(chargerReglages);
+  if (vue === "historique") await agir(() => chargerHistorique());
+  if (vue === "departs") await agir(chargerEtat);
+}
+
+function entete(){
+  const et = S.etat;
+  return h("header", {class:"tete"},
+    h("div", {class:"tete-l1"},
+      h("div", {class:"marque"}, "Choix du transporteur", h("small", {}, "BMV · KUEHNE NAGEL · XPO")),
+      h("nav", {class:"onglets"}, [["departs", "Départs du jour"], ["historique", "Historique"], ["reglages", "Réglages"]].map(([v, l]) =>
+        h("button", {type:"button", "aria-current":S.vue === v ? "page" : null, onclick:() => aller(v)}, l)))),
+    et ? bandeau(et) : null);
+}
+
+// Moyennes pondérées (total transport / total HT) du jour et du mois, toujours visibles.
+function bandeau(et){
+  const items = [];
+  const indic = (lib, taux, n, max) => h("div", {class:"indic " + (taux == null ? "" : taux > max ? "bad" : "ok")},
+    h("span", {}, lib), h("b", {}, pct(taux)), h("small", {}, pluriel(n, "expédition", "expéditions")));
+  const lot = et.lot;
+  if (lot && !lot.blocages.length){
+    for (const j of Object.values(lot.jours)) items.push(indic("Jour " + j.libelle, j.taux, j.nb, lot.seuils.moyenne_max));
+    for (const m of Object.values(lot.mois)) items.push(indic("Mois " + m.libelle, m.taux, m.nb, lot.seuils.moyenne_max));
+  } else {
+    const m = et.mois_courant;
+    items.push(indic("Mois " + m.libelle, m.taux, m.nb, m.max));
+  }
+  const max = lot ? lot.seuils.moyenne_max : et.mois_courant.max, min = lot ? lot.seuils.moyenne_min : null;
+  items.push(h("div", {class:"indic"}, h("small", {}, "Objectif : moyenne " + (min != null ? nb(min, 1).replace(".", ",") + " à " : "≤ ") + nb(max, 1) + " % (total transport ÷ total HT)")));
+  return h("div", {class:"bandeau"}, items);
+}
+
+function messages(){
+  return [
+    S.erreur ? h("div", {class:"boite rouge", role:"alert"}, h("strong", {}, S.erreur)) : null,
+    S.message ? h("div", {class:"boite vert", role:"status"}, S.message) : null,
+  ];
+}
+
+function vueConnexion(){
+  const champ = h("input", {type:"password", id:"code", autocomplete:"current-password", required:true});
+  return h("form", {class:"connexion carte", onsubmit:async e => {
+    e.preventDefault();
+    try { await api("connexion", {code:champ.value}); await chargerEtat(); S.erreur = null; S.vue = "departs"; render(); }
+    catch (err){ S.erreur = err.code === "code" ? "Ce code n'est pas le bon." : "Le site ne répond pas. Réessayez dans un moment."; render(); }
+  }},
+    h("h1", {class:"marque"}, "Choix du transporteur"),
+    h("div", {class:"champ"}, h("label", {for:"code"}, "Code d'accès"), champ, h("p", {class:"aide"}, "À taper une seule fois : cet ordinateur s'en souviendra.")),
+    S.erreur ? h("p", {class:"boite rouge"}, S.erreur) : null,
+    h("div", {class:"actions"}, h("button", {class:"btn primaire", type:"submit"}, "Entrer")));
+}
+
+// ---------- Départs du jour ----------
+function boutonImport(libelle, primaire){
+  const input = h("input", {type:"file", accept:".csv,text/csv", hidden:true, onchange:e => {
+    const f = e.target.files[0]; if (!f) return;
+    agir(async () => {
+      S.etat = await api("importer", {nom:f.name, contenu:await lireBase64(f)});
+      S.ouverts = {};
+      S.message = "Export importé : " + f.name + ".";
+    });
+  }});
+  return h("span", {}, input, h("button", {type:"button", class:"btn" + (primaire ? " primaire" : ""), disabled:S.occupe, onclick:() => input.click()}, libelle));
+}
+
+function saisir(num, saisie){
+  agir(async () => { S.etat = await api("saisir", {num, saisie}); });
+}
+
+function vueDeparts(){
+  const et = S.etat || {};
+  const lot = et.lot;
+  if (!lot) return h("div", {class:"vue"}, messages(),
+    et.erreur_lot ? h("div", {class:"boite rouge"}, "L'export en cours ne peut plus être lu : " + et.erreur_lot) : null,
+    h("section", {class:"carte"},
+      h("h2", {}, "Importer les départs du jour"),
+      h("p", {}, "Exportez « Saisie des préparations expédition » depuis FLOW ONE, puis choisissez le fichier .csv ici, sans l'ouvrir avant dans Excel."),
+      h("div", {class:"actions"}, boutonImport("Importer l'export FLOW ONE", true))),
+    et.grille ? null : h("div", {class:"boite orange"}, "La grille tarifaire n'est pas encore importée : ", h("button", {class:"lien", type:"button", onclick:() => aller("reglages")}, "Réglages"), "."));
+
+  const exps = lot.expeditions;
+  const attribuees = exps.filter(e => e.choix);
+  const rouges = exps.filter(e => !e.choix && !lot.blocages.length);
+  const parT = Object.fromEntries(T.map(t => [t, attribuees.filter(e => e.choix === t).length]));
+  return h("div", {class:"vue"},
+    h("div", {class:"actions"},
+      h("span", {}, h("strong", {}, lot.fichier), h("span", {class:"muted petit"}, " · importé le " + quand(lot.importe_le) + (lot.enregistre_le ? " · enregistré le " + quand(lot.enregistre_le) : ""))),
+      h("span", {class:"sep", style:"flex:1"}),
+      boutonImport("Importer un autre export", false),
+      h("button", {type:"button", class:"btn", disabled:S.occupe, onclick:() => { if (confirm("Fermer cet export ? Les saisies non enregistrées seront perdues.")) agir(async () => { S.etat = await api("fermer", {}); }); }}, "Fermer")),
+    messages(),
+    lot.blocages.length ? h("div", {class:"boite rouge", role:"alert"}, h("strong", {}, "Calcul bloqué"), h("ul", {}, lot.blocages.map(b => h("li", {}, b))),
+      h("p", {}, h("button", {class:"lien", type:"button", onclick:() => aller("reglages")}, "Ouvrir les réglages"))) : null,
+    lot.avertissements.length ? h("div", {class:"boite orange"}, h("ul", {}, lot.avertissements.map(a => h("li", {}, a)))) : null,
+    alertesMoyennes(lot),
+    h("div", {class:"puces"},
+      h("span", {class:"puce"}, pluriel(lot.nb_bons, "bon", "bons") + " · " + pluriel(exps.length, "expédition", "expéditions")),
+      T.map(t => parT[t] ? h("span", {class:"puce"}, t + " : " + parT[t]) : null),
+      rouges.length ? h("span", {class:"puce bad"}, pluriel(rouges.length, "expédition en rouge", "expéditions en rouge")) : null),
+    h("div", {class:"table-wrap"}, h("table", {},
+      h("thead", {}, h("tr", {},
+        h("th", {}, "Expédition"), h("th", {class:"r"}, "Montant HT"), h("th", {}, "Poids (kg)"), h("th", {}, "Palettes"),
+        T.map(t => h("th", {}, t)), h("th", {}, "Choix"), h("th", {class:"r"}, "Taux"), h("th", {}, ""))),
+      h("tbody", {}, exps.map(e => ligneExpedition(e, lot))))),
+    h("div", {class:"barre"},
+      T.map(t => h("button", {type:"button", class:"btn", disabled:S.occupe || !!lot.blocages.length || !parT[t], onclick:() => agir(async () => {
+        const nom = await telecharger("type=transporteur&t=" + t); await chargerEtat(); S.message = "Fichier " + nom + " téléchargé ; la journée est enregistrée dans l'historique.";
+      })}, "Fichier " + t + " (" + parT[t] + ")")),
+      h("button", {type:"button", class:"btn primaire", disabled:S.occupe || !!lot.blocages.length || !attribuees.length, onclick:() => agir(async () => {
+        const nom = await telecharger("type=flowone"); await chargerEtat(); S.message = "Fichier " + nom + " téléchargé, à réimporter dans FLOW ONE ; la journée est enregistrée dans l'historique.";
+      })}, "Retour FLOW ONE"),
+      h("span", {class:"sep"}),
+      h("button", {type:"button", class:"btn", disabled:S.occupe || !!lot.blocages.length || !attribuees.length, onclick:() => agir(async () => {
+        const d = await api("enregistrer", {}); S.etat = d; S.message = pluriel(d.enregistrees, "expédition enregistrée", "expéditions enregistrées") + " dans l'historique.";
+      })}, "Enregistrer dans l'historique")));
+}
+
+// Moyenne au-dessus de l'objectif : une ligne par jour ou mois, la liste des expéditions qui la font monter s'ouvre d'un clic
+// (les plus coûteuses d'abord) ; le tableau des départs reste visible.
+function alertesMoyennes(lot){
+  if (lot.blocages.length) return null;
+  const max = lot.seuils.moyenne_max;
+  const bloc = (cls, titre, resp, cle) => h("details", {class:"boite " + cls, open:!!S.ouverts[cle], ontoggle:ev => { S.ouverts[cle] = ev.target.open; }},
+    h("summary", {style:"cursor:pointer"}, h("strong", {}, titre), " — " + pluriel(resp.length, "expédition la fait monter", "expéditions la font monter")),
+    h("ul", {style:"margin-top:6px"}, resp.map(r => h("li", {}, h("span", {class:"num"}, r.num), " · " + r.client + " · ", h("strong", {}, pct(r.taux)), " · " + eur(r.surcout) + " au-dessus de " + nb(max, 1) + " %"))));
+  return [
+    Object.entries(lot.jours).filter(([, j]) => j.alerte).map(([d, j]) => bloc("rouge", "Moyenne du " + j.libelle + " : " + pct(j.taux) + ", au-dessus de " + nb(max, 1) + " %", j.responsables, "alerte-" + d)),
+    Object.entries(lot.mois).filter(([, m]) => m.alerte).map(([k, m]) => bloc("orange", "Moyenne de " + m.libelle + " : " + pct(m.taux) + ", au-dessus de " + nb(max, 1) + " %", m.responsables, "alerte-" + k)),
+  ];
+}
+
+function ligneExpedition(e, lot){
+  const ouvert = !!S.ouverts[e.num];
+  const s = e.saisie;
+  const nbCols = 10 + T.length - 3;
+  const champ = (k, val, lib, source) => h("input", {type:"text", inputmode:"decimal", class:"mini" + (source === "saisie" ? " saisi" : ""), value:saisieNb(val), "aria-label":lib + " — " + e.num, title:lib + (source === "export" ? " (lu dans l'export)" : source === "saisie" ? " (saisi)" : ""), "data-k":e.num + ":" + k,
+    onchange:ev => saisir(e.num, {[k]:ev.target.value.trim()})});
+  const offres = T.map(t => {
+    const o = e.offres[t];
+    if (!o) return h("td", {class:"offre muted"}, "–");
+    if (o.exclu) return h("td", {class:"offre exclu", title:o.exclu.join(" ; ")}, h("span", {class:"ex"}, "Exclu"), h("small", {}, o.exclu.join(" ; ")));
+    return h("td", {class:"offre" + (e.choix === t ? " choisi" : "") + (e.moins_cher === t ? " mc" : ""), title:e.moins_cher === t ? "Le moins cher" : null},
+      h("span", {class:"prix"}, eur(o.total)), h("small", {}, eur(o.base) + " + " + pct(o.gasoil, o.gasoil % 1 ? 2 : 0)));
+  });
+  const valides = T.filter(t => e.offres[t] && e.offres[t].total != null);
+  const choix = e.erreurs.length || !valides.length ? h("span", {class:"erreur"}, e.erreurs.join(" · ") || "–")
+    : h("select", {"aria-label":"Transporteur retenu — " + e.num, "data-k":e.num + ":force", onchange:ev => saisir(e.num, {force:ev.target.value || null})},
+        h("option", {value:"", selected:!s.force}, "Auto : " + e.moins_cher),
+        valides.filter(t => t !== e.moins_cher).map(t => h("option", {value:t, selected:s.force === t}, "Forcer " + t)));
+  const ligne = h("tr", {class:"exp" + (e.erreurs.length && !lot.blocages.length ? " rouge" : "")},
+    h("td", {},
+      h("div", {}, h("span", {class:"exp-num"}, e.num), e.bons.length > 1 ? h("span", {class:"puce", style:"margin-left:6px"}, pluriel(e.bons.length, "bon", "bons")) : null),
+      h("div", {class:"exp-client"}, e.client),
+      h("div", {class:"exp-lieu"}, (e.dest.cp || "") + " " + e.dest.ville + (e.zone ? " · " + e.zone : ""))),
+    h("td", {class:"r num"}, eur(e.ht)),
+    h("td", {},
+      h("div", {class:"num"}, nb(e.poids_export, 1)),
+      h("label", {class:"pal"}, h("span", {}, "pesé"), champ("poids_pese", s.poids_pese, "Poids pesé (kg)", s.sources.poids_pese))),
+    h("td", {},
+      h("div", {class:"pal3", "aria-hidden":"true"}, h("span", {}, "80×120"), h("span", {}, "80×85"), h("span", {}, "haut. m")),
+      h("div", {class:"pal3"},
+        champ("n120", s.n120, "Palettes 80×120", s.sources.n120), champ("n85", s.n85, "Palettes 80×85", s.sources.n85), champ("hauteur", s.hauteur, "Hauteur (m)", s.sources.hauteur)),
+      h("label", {class:"case", title:e.rdv_auto ? "Rendez-vous détecté dans les consignes" : null},
+        h("input", {type:"checkbox", checked:e.rdv, onchange:ev => saisir(e.num, {rdv:ev.target.checked})}), "rendez-vous" + (e.rdv_auto ? " (consignes)" : ""),
+        e.palettes ? h("span", {style:"margin-left:auto"}, nb(e.palettes.volume, 2) + " m³") : null)),
+    offres,
+    h("td", {}, choix, e.choix && e.choix !== e.moins_cher ? h("div", {class:"petit muted"}, "+" + eur(e.total - e.offres[e.moins_cher].total) + " vs " + e.moins_cher) : null),
+    h("td", {class:"r"}, e.taux != null ? [h("span", {class:"taux" + (e.au_dessus ? " haut" : "")}, pct(e.taux)), h("div", {class:"petit muted", style:"white-space:nowrap"}, "repère " + nb(e.seuil, 1) + " %")] : "–"),
+    h("td", {}, h("button", {type:"button", class:"bascule", "aria-expanded":String(ouvert), title:"Détail", onclick:() => { S.ouverts[e.num] = !ouvert; render(); }}, ouvert ? "▾" : "▸")));
+  if (!ouvert) return ligne;
+  return [ligne, h("tr", {class:"detail"}, h("td", {colspan:nbCols}, detailExpedition(e)))];
+}
+
+function detailExpedition(e){
+  const blocs = T.map(t => {
+    const o = e.offres[t];
+    if (!o) return h("div", {class:"bloc"}, h("h4", {}, t), h("p", {class:"muted"}, "Non calculé."));
+    if (o.exclu) return h("div", {class:"bloc"}, h("h4", {}, t + " — exclu"), h("ul", {}, o.exclu.map(x => h("li", {}, x))));
+    return h("div", {class:"bloc"}, h("h4", {}, t + (e.choix === t ? " — retenu" : "")),
+      h("table", {}, h("tbody", {},
+        o.lignes.map(([lib, m]) => h("tr", {}, h("td", {}, lib), h("td", {class:"r num"}, eur(m)))),
+        h("tr", {class:"tot"}, h("td", {}, "Prix de base"), h("td", {class:"r num"}, eur(o.base))),
+        h("tr", {}, h("td", {}, "Taxe gasoil " + pct(o.gasoil, o.gasoil % 1 ? 2 : 0)), h("td", {class:"r num"}, eur(o.taxe))),
+        h("tr", {class:"tot"}, h("td", {}, "Prix du transport"), h("td", {class:"r num"}, eur(o.total))))),
+      o.notes.map(n => h("p", {class:"muted"}, n)));
+  });
+  const infos = [
+    ["Bons", e.bons.join(", ") + (e.bons.length > 1 ? " (principal : " + e.principal + ")" : "")],
+    ["Réf. client", e.refs], ["Livraison", [e.dest.nom, e.dest.complement, e.dest.adresse1, e.dest.adresse2, (e.dest.cp || "") + " " + e.dest.ville].filter(Boolean).join(", ")],
+    ["Consignes", e.consignes], ["Dates", "expédition " + dateFr(e.date) + " · livraison " + dateFr(e.date_liv)],
+    ["Poids retenu", nb(e.poids, 1) + " kg" + (e.saisie.poids_pese ? " (pesé)" : " (export)")],
+    ["Dans l'export", e.transporteur_export],
+  ].filter(([, v]) => v);
+  return h("div", {style:"display:grid;gap:10px"},
+    e.suggestion ? h("div", {class:"piste"}, h("strong", {}, "Piste d'économie : "), e.suggestion.texte) : null,
+    e.notes.length ? h("div", {class:"boite orange"}, e.notes.map(n => h("p", {}, n))) : null,
+    h("div", {class:"detail-grille"}, blocs,
+      h("div", {class:"bloc"}, h("h4", {}, "Expédition " + e.num), h("table", {}, h("tbody", {}, infos.map(([k, v]) => h("tr", {}, h("td", {class:"muted"}, k), h("td", {}, v))))))));
+}
+
+// ---------- Historique ----------
+async function chargerHistorique(mois){ S.histo = await api("historique", undefined, mois ? "&mois=" + mois : ""); }
+
+function vueHistorique(){
+  const d = S.histo;
+  if (!d) return h("div", {class:"vue"}, messages(), h("p", {class:"chargement"}, "Chargement…"));
+  const r = d.recap;
+  const ligneTotaux = (lib, a, cls) => h("tr", {class:cls || null}, h("td", {}, lib), h("td", {class:"r num"}, a.nb), h("td", {class:"r num"}, a.palettes), h("td", {class:"r num"}, nb(a.poids, 0)),
+    h("td", {class:"r num"}, eur(a.total)), h("td", {class:"r num"}, eur(a.ht)), h("td", {class:"r"}, h("span", {class:"taux" + (a.taux > d.max ? " haut" : "")}, pct(a.taux))));
+  const enTete = (premier) => h("thead", {}, h("tr", {}, h("th", {}, premier), h("th", {class:"r"}, "Expéditions"), h("th", {class:"r"}, "Palettes"), h("th", {class:"r"}, "Poids (kg)"),
+    h("th", {class:"r"}, "Coût transport"), h("th", {class:"r"}, "Montant HT"), h("th", {class:"r"}, "Taux")));
+  return h("div", {class:"vue"}, messages(),
+    h("div", {class:"actions"},
+      h("label", {for:"mois", style:"font-weight:700"}, "Mois"),
+      h("select", {id:"mois", onchange:ev => agir(() => chargerHistorique(ev.target.value))},
+        (d.disponibles.length ? d.disponibles : [{mois:d.mois, libelle:d.libelle}]).map(m => h("option", {value:m.mois, selected:m.mois === d.mois}, m.libelle))),
+      h("span", {style:"flex:1"}),
+      h("button", {type:"button", class:"btn", disabled:!r.total.nb || S.occupe, onclick:() => agir(async () => { const nom = await telecharger("type=recap&mois=" + d.mois); S.message = "Récapitulatif " + nom + " téléchargé."; })}, "Exporter le récapitulatif (CSV)")),
+    !r.total.nb ? h("p", {class:"boite neutre"}, "Aucune expédition enregistrée pour " + d.libelle + ". Une journée entre dans l'historique dès qu'un fichier est téléchargé ou avec « Enregistrer dans l'historique ».") : [
+      h("section", {class:"carte"}, h("h2", {}, "Par transporteur — " + d.libelle),
+        h("div", {class:"table-wrap"}, h("table", {}, enTete("Transporteur"), h("tbody", {},
+          Object.entries(r.transporteurs).map(([t, a]) => ligneTotaux(t, a)),
+          ligneTotaux("Total", r.total, "tot")))),
+        r.forces.nb ? h("p", {class:"muted"}, pluriel(r.forces.nb, "choix forcé", "choix forcés") + " dans le mois, pour " + eur(r.forces.surcout) + " de plus que le moins cher.") : null),
+      h("details", {class:"section"}, h("summary", {}, "Taux moyen par département et par transporteur"),
+        h("div", {class:"corps"}, h("div", {class:"table-wrap"}, h("table", {}, enTete("Transporteur · dép."), h("tbody", {},
+          r.departements.map(a => ligneTotaux(a.transporteur + " · " + a.dep, a))))))),
+      h("details", {class:"section"}, h("summary", {}, "Par jour"),
+        h("div", {class:"corps"}, h("div", {class:"table-wrap"}, h("table", {}, enTete("Jour"), h("tbody", {}, r.jours.map(a => ligneTotaux(dateFr(a.date), a))))))),
+      h("details", {class:"section"}, h("summary", {}, "Toutes les expéditions du mois (" + d.expeditions.length + ")"),
+        h("div", {class:"corps"}, h("div", {class:"table-wrap"}, h("table", {},
+          h("thead", {}, h("tr", {}, ["Date", "Expédition", "Client", "Dép.", "Transporteur", "Palettes", "Poids", "Montant HT", "Transport", "Taux"].map((x, i) => h("th", {class:i >= 5 ? "r" : null}, x)))),
+          h("tbody", {}, d.expeditions.map(x => h("tr", {},
+            h("td", {}, dateFr(x.date)), h("td", {class:"num"}, x.num), h("td", {}, x.client), h("td", {}, x.dep),
+            h("td", {}, x.transporteur + (x.force ? " (forcé)" : "")), h("td", {class:"r num"}, x.n120 + x.n85), h("td", {class:"r num"}, nb(x.poids, 0)),
+            h("td", {class:"r num"}, eur(x.ht)), h("td", {class:"r num"}, eur(x.total)), h("td", {class:"r num"}, pct(x.ht ? x.total / x.ht * 100 : null))))))))),
+    ]);
+}
+
+// ---------- Réglages ----------
+async function chargerReglages(){
+  const d = await api("reglages");
+  S.R = d.reglages; S.meta = d;
+  // Le mois en cours (et le suivant) apparaissent toujours dans la taxe gasoil, même vides.
+  const m = moisCourant(); for (const x of [m, moisSuivant(m)]) if (!S.R.gasoil[x]) S.R.gasoil[x] = {};
+  if (Array.isArray(S.R.gasoil)) S.R.gasoil = {};
+}
+const moisCourant = () => new Date().toISOString().slice(0, 7);
+function moisSuivant(m){ let [a, n] = m.split("-").map(Number); n++; if (n > 12){ n = 1; a++; } return a + "-" + String(n).padStart(2, "0"); }
+const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const nomMois = (m) => MOIS[Number(m.slice(5)) - 1] + " " + m.slice(0, 4);
+
+// Lecture / écriture dans S.R par chemin « transporteurs.BMV.saison.pct ».
+function lire(chemin){ return chemin.split(".").reduce((o, k) => o == null ? undefined : o[k], S.R); }
+function ecrire(chemin, v){ const ks = chemin.split("."); let o = S.R; for (const k of ks.slice(0, -1)){ if (o[k] == null || typeof o[k] !== "object") o[k] = {}; o = o[k]; } o[ks[ks.length - 1]] = v; }
+
+function champ(lib, chemin, opts = {}){
+  const v = lire(chemin);
+  const vide = opts.obligatoire && (v == null || v === "");
+  return h("div", {class:"champ"},
+    h("label", {for:chemin}, lib),
+    h("input", {type:"text", id:chemin, "data-k":chemin, inputmode:opts.texte ? null : "decimal", class:vide ? "vide-champ" : null,
+      value:v == null ? "" : opts.texte ? String(v) : saisieNb(v), placeholder:opts.placeholder || null, oninput:ev => ecrire(chemin, ev.target.value)}),
+    opts.aide ? h("p", {class:"aide"}, opts.aide) : null);
+}
+function champListe(lib, chemin, aide){
+  const v = lire(chemin);
+  return h("div", {class:"champ"}, h("label", {for:chemin}, lib),
+    h("input", {type:"text", id:chemin, "data-k":chemin, value:Array.isArray(v) ? v.join(", ") : (v || ""), oninput:ev => ecrire(chemin, ev.target.value)}),
+    aide ? h("p", {class:"aide"}, aide) : null);
+}
+
+function vueReglages(){
+  if (!S.R) return h("div", {class:"vue"}, messages(), h("p", {class:"chargement"}, "Chargement…"));
+  const R = S.R, meta = S.meta;
+  return h("div", {class:"vue"}, messages(),
+    h("p", {class:"muted"}, "Les champs encadrés de rouge sont obligatoires : tant qu'ils sont vides, le calcul est bloqué. Pensez à enregistrer en bas de page."),
+    sectionGasoil(R), sectionGrille(meta), T.map(t => sectionTransporteur(t, R)), sectionTaux(R), sectionCorrespondance(R, meta), sectionExpediteur(),
+    h("div", {class:"barre"}, h("button", {type:"button", class:"btn primaire", disabled:S.occupe, onclick:enregistrerReglages}, "Enregistrer les réglages"),
+      h("button", {type:"button", class:"btn", disabled:S.occupe, onclick:() => agir(chargerReglages)}, "Annuler les modifications")));
+}
+
+function enregistrerReglages(){
+  agir(async () => {
+    const d = await api("reglages_enregistrer", {reglages:S.R});
+    S.R = d.reglages;
+    const m = moisCourant(); for (const x of [m, moisSuivant(m)]) if (!S.R.gasoil[x]) S.R.gasoil[x] = {};
+    await chargerEtat();
+    S.message = "Réglages enregistrés.";
+  });
+}
+
+function sectionGasoil(R){
+  const mois = Object.keys(R.gasoil).sort().reverse();
+  const courant = moisCourant();
+  const manque = T.filter(t => { const v = (R.gasoil[courant] || {})[t]; return v == null || v === ""; });
+  return h("details", {class:"section", open:true}, h("summary", {}, "Taxe gasoil (change chaque mois)"),
+    h("div", {class:"corps"},
+      h("p", {class:"muted"}, "En pourcentage ajouté au prix de base : base 100 € et taxe 20 % → 120 €. Sans taux pour le mois d'expédition, le calcul est bloqué (l'ancien taux n'est jamais repris)."),
+      manque.length ? h("div", {class:"boite rouge"}, "Taux de " + nomMois(courant) + " manquant pour " + manque.join(", ") + ".") : null,
+      h("div", {class:"table-wrap"}, h("table", {},
+        h("thead", {}, h("tr", {}, h("th", {}, "Mois"), T.map(t => h("th", {}, t + " (%)")))),
+        h("tbody", {}, mois.map(m => h("tr", {}, h("td", {}, h("strong", {}, nomMois(m)), m === courant ? h("span", {class:"muted"}, " (en cours)") : null),
+          T.map(t => { const k = "gasoil." + m + "." + t; const v = lire(k);
+            return h("td", {}, h("input", {type:"text", inputmode:"decimal", class:"mini" + ((v == null || v === "") && m === courant ? " vide-champ" : ""), "data-k":k, "aria-label":"Taxe gasoil " + t + " " + nomMois(m), value:v == null ? "" : saisieNb(v), oninput:ev => ecrire(k, ev.target.value)})); })))))),
+      h("div", {class:"actions"}, h("button", {type:"button", class:"btn", onclick:() => { const d = Object.keys(R.gasoil).sort().pop() || moisCourant(); R.gasoil[moisSuivant(d)] = {}; render(); }}, "Ajouter le mois suivant"))));
+}
+
+function sectionGrille(meta){
+  const g = meta.grille;
+  const input = h("input", {type:"file", accept:".xlsx", hidden:true, onchange:e => {
+    const f = e.target.files[0]; if (!f) return;
+    agir(async () => {
+      const d = await api("classeur", {nom:f.name, contenu:await lireBase64(f)});
+      await chargerReglages(); await chargerEtat();
+      S.message = "Classeur importé : " + f.name + ". Vérifiez ci-dessous les valeurs reprises.";
+    });
+  }});
+  return h("details", {class:"section", open:!g}, h("summary", {}, "Grille tarifaire (classeur Excel)"),
+    h("div", {class:"corps"},
+      h("p", {}, "Importez le classeur « Aide décision BMV - XPO - KUEHNE » (.xlsx). Les prix viennent de la feuille « Tarifs à changer chaque année » ; les frais, la saison et les majorations sont lus dans les autres feuilles et repris ci-dessous dans chaque transporteur. À refaire à chaque changement de tarifs."),
+      g ? h("p", {}, "Classeur actuel : ", h("strong", {}, g.fichier), h("span", {class:"muted"}, " · importé le " + quand(g.importe_le))) : h("div", {class:"boite rouge"}, "Aucune grille importée : le calcul est bloqué."),
+      h("div", {class:"actions"}, input, h("button", {type:"button", class:"btn primaire", disabled:S.occupe, onclick:() => input.click()}, g ? "Importer un nouveau classeur" : "Importer le classeur")),
+      g ? [
+        h("div", {class:"boite neutre"}, h("strong", {}, "Grilles lues"), h("ul", {}, g.resume.map(x => h("li", {}, x)))),
+        g.reglages_lus.length ? h("div", {class:"boite neutre"}, h("strong", {}, "Frais et majorations repris dans les réglages"), h("ul", {}, g.reglages_lus.map(x => h("li", {}, x)))) : null,
+        g.alertes.length ? h("div", {class:"boite orange"}, h("strong", {}, "À savoir sur ce classeur"), h("ul", {}, g.alertes.map(x => h("li", {}, x)))) : null,
+      ] : null));
+}
+
+function sectionTransporteur(t, R){
+  const p = "transporteurs." + t + ".";
+  const x = R.transporteurs[t];
+  const lieux = (x.urbain.lieux || []).map(l => typeof l === "string" ? l : l.dep + " " + (l.ville === "*" ? "TOUT" : l.ville)).join("\n");
+  const maj = Object.entries(x.majorations || {}).map(([d, v]) => d + " " + saisieNb(v)).join("\n");
+  return h("details", {class:"section"}, h("summary", {}, "Transporteur " + t),
+    h("div", {class:"corps"},
+      h("h3", {}, "FLOW ONE et compte"),
+      h("div", {class:"champs"},
+        champ("Code transporteur FLOW ONE", p + "code_flowone", {texte:true, aide:"Écrit dans DEOCARRIER (KUEHNE = 3)."}),
+        champ("Nom FLOW ONE", p + "designation_flowone", {texte:true, aide:"Écrit dans CARRIERDESIGNATION."}),
+        champ("N° de compte client", p + "compte", {texte:true, aide:"Repris dans le fichier transporteur."})),
+      h("h3", {}, "Contraintes (transporteur exclu si dépassées)"),
+      h("div", {class:"champs"},
+        champ("Palettes max", p + "palettes_max", {aide:"Vide = pas de limite."}),
+        champ("Places max (80×85 = 1, 80×120 = 2)", p + "places_max", {aide:"XPO : 12 = 12 palettes 80×85 ou 6 palettes 80×120."}),
+        champ("Volume max (m³)", p + "volume_max"),
+        champ("Hauteur max (m)", p + "hauteur_max"),
+        champ("Poids max (kg)", p + "poids_max")),
+      h("h3", {}, "Prix (lus dans le classeur, modifiables)"),
+      h("div", {class:"champs"},
+        champ("Révision tarifaire (coefficient)", p + "coef_revision", {obligatoire:true, aide:"1 = aucune ; 1,03 = +3 % sur la grille."}),
+        champ("Frais fixes par expédition (€)", p + "frais_fixes", {obligatoire:true, aide:"Toujours ajoutés (sûreté, contribution…). 0 si aucun."}),
+        champ("Prise de rendez-vous (€)", p + "rdv", {obligatoire:true, aide:"Quand « rendez-vous » est coché. 0 si aucun."}),
+        champ("Accès difficile (€ par 100 kg)", p + "difficile.par_100kg", {obligatoire:true, aide:"Communes de la liste XPO. 0 si aucun."}),
+        champ("Accès difficile, maximum (€)", p + "difficile.max", {obligatoire:true})),
+      h("h3", {}, "Majoration saisonnière"),
+      h("div", {class:"champs"},
+        champ("Majoration (%)", p + "saison.pct", {obligatoire:true, aide:"0 si aucune."}),
+        champ("Du (JJ/MM)", p + "saison.du", {texte:true, placeholder:"01/05"}),
+        champ("Au (JJ/MM)", p + "saison.au", {texte:true, placeholder:"31/08"})),
+      champListe("Départements concernés", p + "saison.departements", "Séparés par des virgules."),
+      h("h3", {}, "Livraison urbaine et majorations par département"),
+      h("div", {class:"champs"}, champ("Livraison urbaine (€)", p + "urbain.montant", {obligatoire:true, aide:"0 si aucune."})),
+      h("div", {class:"champs", style:"grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"},
+        h("div", {class:"champ"}, h("label", {for:p + "lieux"}, "Villes de livraison urbaine"),
+          h("textarea", {id:p + "lieux", rows:5, oninput:ev => ecrire(p + "urbain.lieux", ev.target.value.split("\n").map(s => s.trim()).filter(Boolean))}, lieux),
+          h("p", {class:"aide"}, "Une par ligne : département puis ville (« 69 LYON »), ou « 75 TOUT » pour tout le département.")),
+        h("div", {class:"champ"}, h("label", {for:p + "maj"}, "Majorations par département (%)"),
+          h("textarea", {id:p + "maj", rows:5, oninput:ev => { const o = {}; for (const l of ev.target.value.split("\n")){ const m = /^\s*(\d{1,2}|2[AB])\s+([\d.,]+)\s*%?\s*$/i.exec(l); if (m) o[m[1]] = m[2]; } ecrire(p + "majorations", o); }}, maj),
+          h("p", {class:"aide"}, "Une par ligne : département puis pourcentage (« 75 6 »).")))));
+}
+
+function sectionTaux(R){
+  return h("details", {class:"section"}, h("summary", {}, "Taux de transport (moyennes et repères)"),
+    h("div", {class:"corps"},
+      h("p", {class:"muted"}, "Taux = prix du transport (base + taxe gasoil) ÷ montant HT. La moyenne est pondérée : total des transports ÷ total des montants HT. Les repères par expédition ne bloquent jamais rien."),
+      h("div", {class:"champs"},
+        champ("Moyenne visée, bas (%)", "taux.moyenne_min", {obligatoire:true}),
+        champ("Moyenne visée, haut (%) — alerte au-dessus", "taux.moyenne_max", {obligatoire:true}),
+        champ("Repère par expédition (%)", "taux.seuil", {obligatoire:true}),
+        champ("Repère dans les zones chères (%)", "taux.seuil_zones", {obligatoire:true})),
+      h("div", {class:"champs", style:"grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"},
+        Object.keys(R.taux.zones).map(z => champListe("Zone chère : " + z, "taux.zones." + z, "Départements séparés par des virgules.")))));
+}
+
+function sectionCorrespondance(R, meta){
+  const cols = meta.colonnes || [];
+  const ligne = (sens, k, lib) => {
+    const chemin = sens + "." + k, v = lire(chemin) || "";
+    return h("tr", {}, h("td", {}, lib), h("td", {},
+      h("select", {"aria-label":lib, onchange:ev => ecrire(chemin, ev.target.value)},
+        h("option", {value:""}, "— aucune —"),
+        (cols.includes(v) || !v ? cols : cols.concat([v])).map(c => h("option", {value:c, selected:c === v}, c)))));
+  };
+  return h("details", {class:"section"}, h("summary", {}, "Correspondance avec les colonnes FLOW ONE"),
+    h("div", {class:"corps"},
+      h("p", {}, "À remplir seulement quand le sens des colonnes est connu (DEONUMERIC01 à 06 notamment) : rien n'est jamais écrit au hasard. Tant qu'une information n'a pas de colonne, le retour FLOW ONE ne l'écrit pas et laisse la colonne telle qu'elle est dans l'export."),
+      cols.length ? null : h("div", {class:"boite orange"}, "Importez d'abord un export FLOW ONE pour choisir parmi ses colonnes."),
+      h("h3", {}, "Lues dans l'export (pré-remplissent les palettes et le poids pesé)"),
+      h("div", {class:"table-wrap"}, h("table", {}, h("tbody", {}, Object.entries(meta.infos_lecture).map(([k, lib]) => ligne("lecture", k, lib))))),
+      h("h3", {}, "Écrites dans le retour FLOW ONE"),
+      h("p", {class:"muted petit"}, "Toujours écrits : DEOCARRIER et CARRIERDESIGNATION. Bons groupés : prix, poids et palettes en entier sur le bon principal, 0 sur les autres bons ; même transporteur et même n° de suivi pour tous."),
+      h("div", {class:"table-wrap"}, h("table", {}, h("tbody", {}, Object.entries(meta.infos_ecriture).map(([k, lib]) => ligne("ecriture", k, lib)))))));
+}
+
+function sectionExpediteur(){
+  const c = (lib, k) => champ(lib, "expediteur." + k, {texte:true});
+  return h("details", {class:"section"}, h("summary", {}, "Expéditeur (fichiers transporteurs)"),
+    h("div", {class:"corps"}, h("div", {class:"champs"},
+      c("Raison sociale", "nom"), c("Adresse", "adresse1"), c("Adresse (suite)", "adresse2"), c("Code postal", "cp"), c("Ville", "ville"), c("Pays", "pays"), c("Téléphone", "telephone"), c("Contact", "contact"))));
+}
+
+demarrer();
+</script>
+</body>
+</html>

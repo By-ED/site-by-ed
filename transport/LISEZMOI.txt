@@ -1,0 +1,55 @@
+CHOIX DU TRANSPORTEUR : INSTALLATION SUR O2SWITCH
+(environ 15 minutes, une seule fois)
+
+1. ENVOYER LES FICHIERS
+   - cPanel o2switch > Gestionnaire de fichiers > dossier principal (/home/votre-identifiant).
+   - Bouton « Charger » > choisissez transport-o2switch.zip.
+   - Clic droit sur transport-o2switch.zip > « Extract ». Un dossier « transport » apparaît.
+   - Vous pouvez supprimer le fichier zip.
+
+2. CRÉER L'ADRESSE DU SITE
+   - cPanel > Domaines > Créer un domaine (par exemple transport.votre-domaine.fr).
+   - Décochez « Partager la racine du document », racine du document : transport.
+   - Si le domaine est géré ailleurs (Shopify, par exemple) : ajoutez chez lui un enregistrement A
+     vers l'adresse IP du serveur o2switch (même principe que pour le site de QCM).
+
+3. CONFIGURER
+   - Dans le dossier « transport » : clic droit sur config.exemple.php > « Copy » > nommez la copie config.php.
+   - Clic droit sur config.php > « Edit ». Remplissez :
+       code_acces : le code que la secrétaire utilisera
+       secret     : une longue phrase au hasard (personne n'a besoin de la connaître)
+   - Enregistrez.
+
+4. VERSION DE PHP
+   - cPanel > « Sélecteur de version PHP » : PHP 8.2 ou plus récent pour cette adresse,
+     avec l'extension « zip » cochée (elle sert à lire le classeur Excel).
+
+5. PREMIERS RÉGLAGES (onglet « Réglages » du site)
+   - Ouvrez https://transport.votre-domaine.fr/?code=VOTRE-CODE
+   - Grille tarifaire : importez le classeur « Aide décision BMV - XPO - KUEHNE » (.xlsx).
+     Relisez les valeurs reprises et les remarques sur le classeur.
+   - Taxe gasoil : saisissez les taux du mois pour les trois transporteurs.
+   - Transporteurs : codes FLOW ONE de BMV et XPO (KUEHNE = 3), numéros de compte client.
+   - Expéditeur : adresse de départ, reprise dans les fichiers transporteurs.
+   - Enregistrez.
+
+6. CHAQUE JOUR
+   - FLOW ONE : exportez « Saisie des préparations expédition » (sans ouvrir le fichier dans Excel).
+   - Départs du jour > « Importer l'export FLOW ONE ».
+   - Complétez les palettes (80×120, 80×85, hauteur) et, si besoin, le poids pesé.
+     Ligne rouge = information manquante ou aucun transporteur possible : rien n'est attribué.
+   - Vérifiez, forcez un autre transporteur si nécessaire, puis téléchargez les fichiers
+     de chaque transporteur et le « Retour FLOW ONE » à réimporter dans FLOW ONE.
+     La journée entre alors dans l'historique.
+
+7. CHAQUE MOIS / CHAQUE ANNÉE
+   - Avant le 1er du mois : saisir la taxe gasoil du nouveau mois (sinon le calcul est bloqué).
+   - À chaque nouvelle grille : mettre à jour le classeur Excel, puis le réimporter dans Réglages.
+   - Historique : récapitulatif par transporteur et par département, exportable en CSV.
+
+BON À SAVOIR
+   - Grille, réglages, export en cours et historique sont dans transport/data. Ne supprimez pas ce dossier
+     (pensez à le sauvegarder de temps en temps).
+   - Pour changer le code d'accès : modifiez code_acces dans config.php.
+   - Mise à jour du site : remplacez index.html, api.php, moteur.php et classeur.php,
+     sans toucher à config.php ni à data/.

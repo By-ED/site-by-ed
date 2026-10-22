@@ -1,0 +1,13 @@
+Options -Indexes
+DirectoryIndex index.html
+
+# Fichiers qui ne doivent jamais être ouverts depuis le navigateur : seuls index.html et api.php sont publics.
+<FilesMatch "^(config\.php|config\.exemple\.php|moteur\.php|classeur\.php|LISEZMOI\.txt|construire-zip\.sh|\.env)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

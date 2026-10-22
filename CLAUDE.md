@@ -69,3 +69,44 @@ Artifact (base `db`) :
 - `questions/<id>` : `{questions: [{id, niveau (1-3), type (QRU|QCM), enonce, propositions: [{id a-e, texte, vrai, explication}], a_retenir}]}`.
 - `sources/<id>` : `{texte}` texte du cours, gardé pour « Compléter ».
 - `data/users/<uid>/<coursId>` (privé) : `{tentatives: [{date, mode, portee, points, max, parNiveau}], dernier: {questionId: points}}`.
+
+---
+
+# Outil transport : choix du transporteur (`transport/`)
+
+Pour Evan Renouard (Euro Distribution / BY ED, La Clayette). La secrétaire importe l'export FLOW ONE des départs ;
+l'outil choisit pour chaque expédition le transporteur le moins cher (BMV, KUEHNE NAGEL, XPO) qui respecte les contraintes,
+puis produit un CSV par transporteur et le fichier de retour FLOW ONE. Phase 2 (plus tard) : création des expéditions
+sur les sites des transporteurs ; identifiants uniquement dans un `.env` non versionné.
+
+**Le dépôt est public** : jamais de grille tarifaire, d'export FLOW ONE, de nom de client ni de montant de frais dans le dépôt
+(tests avec données inventées uniquement). Tout cela vit dans `transport/data/` (non versionné).
+
+- Même principe que le site de QCM : PHP sur O2switch (adresse à choisir), code d'accès, `config.php` non versionné. Aucune dépendance.
+- `moteur.php` : export FLOW ONE (Windows-1252, « ; », CP complété à 5 chiffres, bons regroupés par ORDEXPNUM), prix, choix, taux,
+  fichiers de sortie, historique. `classeur.php` : import du classeur Excel « Aide décision » (xlsx lu sans bibliothèque).
+  `api.php` : routes. `index.html` : Départs du jour / Historique / Réglages. `php tests/tester.php` : tests. `construire-zip.sh` → zip O2switch.
+- Données : `data/reglages.json`, `grilles.json`, `lot.json` (export en cours + saisies), `colonnes.json`, `historique/AAAA-MM.json`.
+
+Règles (validées par le propriétaire) :
+- Contraintes : BMV 3 palettes, 4 m³, 2,00 m ; KUEHNE 3 palettes, 2,10 m ; XPO 12 places (80×85 = 1 place, 80×120 = 2), 2,20 m.
+  Transporteur exclu s'il dépasse ; aucun possible ou palettes manquantes → ligne rouge, rien d'attribué.
+- Prix de base = grille × révision × saison × majoration du département + frais (fixes, livraison urbaine, rendez-vous, accès difficile).
+  Prix du transport = base × (1 + taxe gasoil) ; la taxe s'applique sur tout. Taux gasoil par mois et par transporteur :
+  absent pour le mois d'expédition → calcul bloqué. Choix sur le prix du transport ; la secrétaire peut forcer un autre transporteur valide.
+- Grilles au poids (BMV, KUEHNE) : forfaits jusqu'à 100 kg, puis prix aux 100 kg sur le poids arrondi aux 10 kg supérieurs.
+  BMV : le prix au kilo continue au-delà de 200 kg ; coefficient « MAJ 01.01 » (révision) appliqué. XPO : prix au nombre de places.
+- Taux = prix du transport / ORDHTBASETOTAL. Moyenne pondérée du jour et du mois ; alerte au-dessus de 3,5 %.
+  Repère par expédition 3,5 %, 5 % en Bretagne, Sud-Ouest, Sud-Est (listes modifiables).
+- Retour FLOW ONE : l'export d'origine octet pour octet ; seuls DEOCARRIER, CARRIERDESIGNATION et les colonnes de la table
+  de correspondance changent (contrôle avant export). Bons groupés : prix, poids et palettes sur le bon principal, 0 sur les autres.
+  Sens de DEONUMERIC01 à 06 : pas encore donné par le propriétaire, ne jamais le deviner.
+
+Classeur Excel (constats) : les prix viennent de « Tarifs à changer chaque année ». La feuille de comparaison contient des erreurs
+(KUEHNE ≥ 500 kg décalés de plusieurs lignes ; XPO 76 et 79-85 majorés, 75/77/78 majorés deux fois, 90 multiplié par les frais ;
+formule de saison XPO sur d'autres départements avec des dates de 2020) : l'outil ne les reprend pas et les signale à l'import.
+Mentions des libellés : feuille de comparaison → KUEHNE (saison, villes de livraison urbaine) ; « Tarifs » → XPO (saison, région parisienne).
+
+En attente du propriétaire : colonnes palettes dans l'export (pour l'instant saisie dans l'outil), sens des DEONUMERIC,
+codes FLOW ONE de BMV et XPO, formats d'import des transporteurs (CSV provisoire en attendant, `FORMATS_TRANSPORTEUR`),
+XPO taxé au nombre de places seulement ou aussi au poids (130 kg par place ?).

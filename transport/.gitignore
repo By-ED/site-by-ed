@@ -1,0 +1,5 @@
+config.php
+.env
+data/*
+!data/.htaccess
+*.zip
