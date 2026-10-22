@@ -13,7 +13,10 @@ use Anthropic\Core\Exceptions\PermissionDeniedException;
 use Anthropic\Core\Exceptions\RateLimitException;
 
 const MATIERES = ['Appareil urinaire', 'Appareil respiratoire', 'Immunopathologie', 'Biostatistique', 'Génétique médicale', 'PIX (socle numérique)', 'Autre'];
-const NIVEAUX_PL = [1 => 'faciles', 2 => 'moyennes', 3 => 'difficiles'];
+// Niveau 4 = « Mix » : questions de niveaux mélangés, posées après les trois niveaux.
+const MIX = 4;
+const NIVEAUX_PL = [1 => 'faciles', 2 => 'moyennes', 3 => 'difficiles', MIX => 'mix'];
+const NIVEAU_NOM = [1 => 'facile', 2 => 'moyen', 3 => 'difficile'];
 const NIVEAU_DESC = [
     1 => 'FACILE : définitions, notions de base, reconnaissance directe d\'une information du cours.',
     2 => 'MOYEN : mécanismes, liens entre notions, comparaisons, application d\'une notion.',
@@ -277,6 +280,16 @@ function appelerClaude(?string $cours, array $contenu, ?array $schema, string $e
     return $texte;
 }
 
+function schemaMix(): array
+{
+    return ['type' => 'array', 'items' => [
+        'type' => 'object',
+        'properties' => ['niveau' => ['type' => 'string', 'enum' => array_values(NIVEAU_NOM)], 'question' => ['type' => 'string']],
+        'required' => ['niveau', 'question'],
+        'additionalProperties' => false,
+    ]];
+}
+
 function schemaPlan(): array
 {
     $liste = ['type' => 'array', 'items' => ['type' => 'string']];
@@ -285,11 +298,18 @@ function schemaPlan(): array
         'properties' => [
             'titre' => ['type' => 'string'],
             'matiere' => ['type' => 'string', 'enum' => MATIERES],
-            'notions' => $liste, 'facile' => $liste, 'moyen' => $liste, 'difficile' => $liste,
+            'notions' => $liste,
+            'nb_par_rubrique' => ['type' => 'integer', 'enum' => range(6, 15)],
+            'facile' => $liste, 'moyen' => $liste, 'difficile' => $liste, 'mix' => schemaMix(),
         ],
-        'required' => ['titre', 'matiere', 'notions', 'facile', 'moyen', 'difficile'],
+        'required' => ['titre', 'matiere', 'notions', 'nb_par_rubrique', 'facile', 'moyen', 'difficile', 'mix'],
         'additionalProperties' => false,
     ];
+}
+
+function schemaPlanMix(): array
+{
+    return ['type' => 'object', 'properties' => ['mix' => schemaMix()], 'required' => ['mix'], 'additionalProperties' => false];
 }
 
 function schemaLot(): array
@@ -324,21 +344,42 @@ function consignePlan(string $matiere, array $dejaPoses = []): string
         . "1. \"titre\" : titre court et précis du cours (celui du document si possible).\n"
         . "2. \"matiere\" : la matière du cours parmi la liste proposée.\n"
         . "3. \"notions\" : la liste EXHAUSTIVE des notions du cours, dans l'ordre du cours : définitions, mécanismes, classifications, valeurs chiffrées et normes, signes, étiologies, exceptions, formules, schémas et tableaux. Une notion = une ligne courte.\n"
-        . "4. \"facile\", \"moyen\", \"difficile\" : pour chaque niveau, la liste des questions à poser. Chaque élément décrit en une phrase ce que la question teste (notions et chiffres précis visés).\n"
+        . "4. \"nb_par_rubrique\" : le nombre de questions de CHAQUE rubrique. Le QCM a quatre rubriques (facile, moyen, difficile, mix) qui ont toutes exactement ce nombre de questions. "
+        . "Choisis-le selon la quantité de notions : environ 10 pour un cours de longueur normale, jusqu'à 15 si le cours est long et dense, 6 pour un cours court (moins de questions, mais aucune répétition).\n"
+        . "5. \"facile\", \"moyen\", \"difficile\" : pour chaque niveau, exactement nb_par_rubrique questions à poser. Chaque élément décrit en une phrase ce que la question teste (notions et chiffres précis visés).\n"
         . "   - Facile : définitions, notions de base, reconnaissance directe.\n"
         . "   - Moyen : mécanismes, liens entre notions, comparaisons, application.\n"
         . "   - Difficile : détails fins, valeurs chiffrées précises, pièges (inversions, chiffres modifiés, notions proches confondues), cas pratiques, raisonnement ou calcul si le cours s'y prête.\n"
-        . "   - Nombre de questions selon la quantité de notions : environ 10 par niveau pour un cours de longueur normale, jusqu'à 15 par niveau si le cours est long et dense. Pour un cours court, 6 par niveau : moins de questions, mais aucune répétition.\n"
-        . "   - Chaque notion doit être testée par au moins une question, tous niveaux confondus. Une même notion n'est jamais interrogée deux fois au même niveau ; si elle revient à un autre niveau, c'est sous un angle vraiment différent (définition au facile, comparaison ou mécanisme au moyen, cas pratique ou piège au difficile).\n"
-        . "   - Les schémas, tableaux, classifications et listes du cours (y compris la partie « Schémas, tableaux et images » si elle existe) sont des notions à part entière : prévois des questions dessus.\n"
-        . "   - Ignore les anecdotes et histoires racontées par le professeur : aucune question sur leurs détails (lieux, chiffres de l'histoire, qui fait quoi le plus souvent…). Elles ne figurent pas non plus dans \"notions\".";
+        . "6. \"mix\" : " . regleMix('nb_par_rubrique') . " Elles ne reprennent l'angle d'aucune question des listes facile, moyen et difficile.\n\n"
+        . "Pour l'ensemble du plan :\n"
+        . "- Chaque notion doit être testée par au moins une question, toutes rubriques confondues. Une même notion n'est jamais interrogée deux fois dans la même rubrique ; si elle revient dans une autre rubrique, c'est sous un angle vraiment différent (définition au facile, comparaison ou mécanisme au moyen, cas pratique ou piège au difficile).\n"
+        . REGLES_PLAN . " Elles ne figurent pas non plus dans \"notions\".";
+}
+
+const REGLES_PLAN = "- Les schémas, tableaux, classifications et listes du cours (y compris la partie « Schémas, tableaux et images » si elle existe) sont des notions à part entière : prévois des questions dessus.\n"
+    . "- Ignore les anecdotes et histoires racontées par le professeur : aucune question sur leurs détails (lieux, chiffres de l'histoire, qui fait quoi le plus souvent…).";
+
+function regleMix(string $nombre): string
+{
+    return "exactement $nombre questions de niveaux mélangés (à peu près autant de faciles, de moyennes et de difficiles), chacune avec son niveau ; "
+        . "\"question\" décrit en une phrase ce que la question teste. Comme une épreuve d'examen, elles balaient l'ensemble du cours, sous des angles nouveaux.";
+}
+
+// Rubrique Mix d'une série qui n'en a pas encore (cours créés avant l'ajout du Mix).
+function consignePlanMix(int $n, array $dejaPoses): string
+{
+    return "Étape demandée : préparer la rubrique « Mix » du QCM de ce cours. Ne rédige pas encore les questions.\n\n"
+        . "\"mix\" : " . regleMix((string) $n) . "\n"
+        . "- Aucune question ne reprend l'angle d'une question déjà posée (liste ci-dessous) : autre détail, autre piège, cas pratique, comparaison entre notions.\n"
+        . REGLES_PLAN . "\n\nQuestions déjà posées :\n- " . implode("\n- ", $dejaPoses);
 }
 
 function consigneLot(int $niveau, array $items, array $autresAngles): string
 {
     $lignes = [];
     foreach ($items as $i => $it) {
-        $lignes[] = ($i + 1) . '. ' . $it['angle'] . ' → ' . ($it['type'] === 'QRU'
+        $niv = isset($it['difficulte']) ? '(niveau ' . NIVEAU_NOM[$it['difficulte']] . ') ' : '';
+        $lignes[] = ($i + 1) . '. ' . $niv . $it['angle'] . ' → ' . ($it['type'] === 'QRU'
             ? 'QRU : exactement 1 proposition vraie sur 5'
             : 'QCM : exactement ' . $it['nbVraies'] . ' propositions vraies sur 5');
     }
@@ -347,7 +388,9 @@ function consigneLot(int $niveau, array $items, array $autresAngles): string
         . "Règles impératives :\n"
         . "- Chaque question a un énoncé et EXACTEMENT 5 propositions. L'énoncé demande toujours de cocher la ou les propositions EXACTES.\n"
         . "- Respecte EXACTEMENT le type et le nombre de propositions vraies demandés pour chaque question (QRU = une seule vraie ; QCM = le nombre indiqué). L'ordre des propositions sera mélangé ensuite.\n"
-        . "- Niveau de ces questions : " . NIVEAU_DESC[$niveau] . "\n"
+        . ($niveau === MIX
+            ? "- Ces questions forment la rubrique « Mix » : chacune a son propre niveau, indiqué entre parenthèses.\n  " . implode("\n  ", NIVEAU_DESC) . "\n"
+            : "- Niveau de ces questions : " . NIVEAU_DESC[$niveau] . "\n")
         . "- Pièges pour les propositions fausses : inversions (augmente/diminue, afférent/efférent, cause/conséquence, droite/gauche, avant/après…), chiffres ou valeurs modifiés (proches mais faux), confusions entre notions proches du cours. N'utilise PAS de mots absolus (« toujours », « jamais », « systématiquement », « uniquement ») comme piège.\n"
         . "- Interroge les chiffres et valeurs précises du cours quand il y en a.\n"
         . "- Les propositions fausses sont plausibles et du même style et de la même longueur que les vraies. Pas de « toutes les réponses » ni de proposition absurde. Une proposition ne donne pas la réponse d'une autre.\n"
@@ -383,19 +426,43 @@ function specsPour(int $n): array
     return $specs;
 }
 
+function itemsMix(mixed $mix): array
+{
+    $niveaux = array_flip(NIVEAU_NOM);
+    $items = [];
+    foreach ((array) $mix as $m) {
+        $angle = is_array($m) ? mb_substr(trim((string) ($m['question'] ?? '')), 0, 400) : '';
+        if ($angle !== '' && isset($niveaux[$m['niveau'] ?? ''])) $items[] = ['angle' => $angle, 'difficulte' => $niveaux[$m['niveau']]];
+    }
+    shuffle($items);
+    return $items;
+}
+
+// Lots de 6 questions au plus, répartis à parts égales.
+function lotsDe(int $niveau, array $items, int $serie): array
+{
+    if (!$items) return [];
+    $specs = specsPour(count($items));
+    foreach ($items as $i => $it) $items[$i] = $it + $specs[$i];
+    $taille = (int) ceil(count($items) / ceil(count($items) / 6));
+    return array_map(fn ($m) => ['niveau' => $niveau, 'serie' => $serie, 'items' => $m, 'statut' => 'attente'], array_chunk($items, $taille));
+}
+
 function construireLots(array $plan, int $serie = 1): array
 {
-    $lots = [];
+    $listes = [];
     foreach (['facile' => 1, 'moyen' => 2, 'difficile' => 3] as $cle => $niveau) {
-        $angles = array_values(array_filter(array_map(fn ($a) => mb_substr(trim((string) $a), 0, 400), (array) ($plan[$cle] ?? []))));
-        $angles = array_slice($angles, 0, 15);
-        if (!$angles) continue;
-        $specs = specsPour(count($angles));
-        $items = [];
-        foreach ($angles as $i => $angle) $items[] = ['angle' => $angle] + $specs[$i];
-        $taille = (int) ceil(count($items) / ceil(count($items) / 6));
-        foreach (array_chunk($items, $taille) as $morceau) $lots[] = ['niveau' => $niveau, 'serie' => $serie, 'items' => $morceau, 'statut' => 'attente'];
+        $angles = array_filter(array_map(fn ($a) => mb_substr(trim((string) $a), 0, 400), (array) ($plan[$cle] ?? [])));
+        $listes[$niveau] = array_map(fn ($a) => ['angle' => $a], array_values($angles));
     }
+    $listes[MIX] = itemsMix($plan['mix'] ?? []);
+    $listes = array_filter($listes);
+    if (!$listes) return [];
+    // Toutes les rubriques ont le même nombre de questions, choisi par Claude selon la longueur du cours.
+    $n = min(15, ...array_map('count', $listes));
+    if ((int) ($plan['nb_par_rubrique'] ?? 0) >= 6) $n = min($n, (int) $plan['nb_par_rubrique']);
+    $lots = [];
+    foreach ($listes as $niveau => $items) array_push($lots, ...lotsDe($niveau, array_slice($items, 0, $n), $serie));
     return $lots;
 }
 
@@ -480,7 +547,7 @@ switch ($action) {
         ecrireJson(cheminQuestions($id), ['questions' => []]);
         ecrireJson(cheminCours($id), [
             'titre' => mb_substr(trim((string) ($entree['titre'] ?? '')), 0, 160), 'matiere' => $matiere,
-            'creeLe' => gmdate('c'), 'statut' => 'analyse', 'nbQuestions' => 0, 'parNiveau' => ['1' => 0, '2' => 0, '3' => 0],
+            'creeLe' => gmdate('c'), 'statut' => 'analyse', 'nbQuestions' => 0, 'parNiveau' => ['1' => 0, '2' => 0, '3' => 0, '4' => 0],
             'notions' => [], 'lots' => [], 'couts' => ['1' => round($coutLecture, 4)],
         ]);
         repondre(200, ['id' => $id]);
@@ -542,6 +609,39 @@ switch ($action) {
         envoyer(['fin' => ['cours' => ['id' => $id] + $cours]]);
         exit;
 
+    case 'mix':
+        // Ajoute la rubrique Mix à une série créée avant son introduction.
+        $id = idValide($entree['id'] ?? null);
+        $cours = chargerCours($id);
+        if (($cours['statut'] ?? '') !== 'pret') repondre(409, ['erreur' => 'incomplet']);
+        $source = (string) @file_get_contents(cheminSource($id));
+        if ($source === '') repondre(409, ['erreur' => 'source_absente']);
+        $serie = (int) ($entree['serie'] ?? 0);
+        $parNiveau = [];
+        $dejaPoses = [];
+        foreach ($cours['lots'] ?? [] as $l) {
+            foreach ($l['items'] as $it) $dejaPoses[] = $it['angle'];
+            if ((int) ($l['serie'] ?? 1) !== $serie) continue;
+            if ((int) $l['niveau'] === MIX) repondre(409, ['erreur' => 'mix_existe']);
+            $parNiveau[(int) $l['niveau']] = ($parNiveau[(int) $l['niveau']] ?? 0) + count($l['items']);
+        }
+        if (!$parNiveau) repondre(400, ['erreur' => 'lot']);
+        // Autant de questions que dans un niveau de la série.
+        $n = max(6, min(15, (int) round(array_sum($parNiveau) / count($parNiveau))));
+        ouvrirFlux();
+        $plan = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consignePlanMix($n, $dejaPoses)]], schemaPlanMix(), (string) ($C['effort'] ?? 'high'), 16000, null, $id, $serie), true);
+        $lots = lotsDe(MIX, array_slice(itemsMix($plan['mix'] ?? []), 0, $n), $serie);
+        if (!$lots) finirEnErreur('plan');
+        $cours = avecVerrou($id, function () use ($id, $lots) {
+            $c = chargerCours($id);
+            $c['lots'] = array_merge($c['lots'] ?? [], $lots);
+            $c['statut'] = statutDe($c['lots']);
+            ecrireJson(cheminCours($id), $c);
+            return $c;
+        });
+        envoyer(['fin' => ['cours' => ['id' => $id] + $cours]]);
+        exit;
+
     case 'lot':
         $id = idValide($entree['id'] ?? null);
         $index = (int) ($entree['index'] ?? -1);
@@ -561,7 +661,7 @@ switch ($action) {
                 if ($nouvelles) ecrireJson(cheminQuestions($id), ['questions' => $qs]);
                 $c['lots'][$index]['statut'] = $statut;
                 if ($statut === 'en_cours') $c['lots'][$index]['debut'] = time();
-                $par = ['1' => 0, '2' => 0, '3' => 0];
+                $par = ['1' => 0, '2' => 0, '3' => 0, '4' => 0];
                 foreach ($qs as $q) $par[(string) $q['niveau']]++;
                 $c['nbQuestions'] = count($qs);
                 $c['parNiveau'] = $par;

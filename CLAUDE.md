@@ -24,7 +24,8 @@ Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
 - Création d'un cours : le navigateur extrait le texte (PDF/Word/PowerPoint ; photos et PDF scannés → action `transcrire`).
   Les pages de PDF qui contiennent des images (schémas, tableaux) sont aussi envoyées à `transcrire` en mode `visuels` :
   le texte de ces images n'est pas dans la couche texte du PDF.
-  Ensuite `cours_creer` → `plan` (notions + liste des questions, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
+  Ensuite `cours_creer` → `plan` (notions + `nb_par_rubrique` + liste des questions des 4 rubriques, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
+  `mix` ajoute la rubrique Mix à une série créée avant elle (bouton « Ajouter le Mix »).
   Les actions longues répondent en NDJSON (`{"progres":n}` puis `{"fin":...}` ou `{"erreur":...}`).
   Le texte du cours est un bloc système mis en cache ; sortie JSON garantie par `output_config.format` ;
   `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`).
@@ -41,8 +42,10 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Notation par question : 0 faute = 1 point ; 1 faute = 0,5 ; 2 fautes = 0,2 ; 3 fautes ou plus = 0.
   Une faute = une case cochée à tort ou une bonne réponse oubliée. Même barème pour QRU et QCM.
 - Mélange de QRU (1 seule vraie) et de QCM ; dans les QCM, 2, 3, 4 ou 5 vraies, réparties au hasard.
-- 3 niveaux, présentés dans l'ordre : facile, moyen, difficile. Environ 10 questions par niveau, plus si le cours est long ;
-  pour un cours court, 6 par niveau, sans répétition (choix de l'étudiante).
+- 3 niveaux, présentés dans l'ordre : facile, moyen, difficile, puis une rubrique « Mix » : nouvelles questions
+  de niveaux mélangés (environ un tiers de chaque), sous des angles différents des trois niveaux.
+- Les 4 rubriques ont toujours le même nombre de questions, selon la longueur du cours : environ 10, jusqu'à 15 si le cours est long ;
+  6 pour un cours court, sans répétition (choix de l'étudiante). Le serveur coupe les listes du plan à la plus courte.
 - Les questions couvrent TOUT le cours (révisions espacées J7, J14, J28 sans rouvrir le cours).
 - Contenu : uniquement le cours fourni. Les chiffres et valeurs précises sont interrogés.
 - Pièges : inversions, chiffres modifiés, notions proches. Pas de pièges à base de « toujours / jamais ».
@@ -60,6 +63,7 @@ Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostati
 ## Données
 
 Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots + `couts` : dollars par série, « 1 » = création), `questions/<id>.json`,
+`niveau` 4 = Mix (les items des lots Mix ont un champ `difficulte` 1 à 3, les questions Mix n'en ont pas),
 `sources/<id>.txt`, `progres.json` (une seule élève), `usage.json` (appels du jour, jetons du mois).
 
 Artifact (base `db`) :
