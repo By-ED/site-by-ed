@@ -95,7 +95,8 @@ Règles (validées par le propriétaire) :
   Prix du transport = base × (1 + taxe gasoil) ; la taxe s'applique sur tout. Taux gasoil par mois et par transporteur :
   absent pour le mois d'expédition → calcul bloqué. Choix sur le prix du transport ; la secrétaire peut forcer un autre transporteur valide.
 - Grilles au poids (BMV, KUEHNE) : forfaits jusqu'à 100 kg, puis prix aux 100 kg sur le poids arrondi aux 10 kg supérieurs.
-  BMV : le prix au kilo continue au-delà de 200 kg ; coefficient « MAJ 01.01 » (révision) appliqué. XPO : prix au nombre de places.
+  BMV : le prix au kilo continue au-delà de 200 kg ; coefficient « MAJ 01.01 » (révision) appliqué.
+  XPO : prix au nombre de places seulement, le poids ne compte pas (confirmé par le propriétaire).
 - Taux = prix du transport / ORDHTBASETOTAL. Moyenne pondérée du jour et du mois ; alerte au-dessus de 3,5 %.
   Repère par expédition 3,5 %, 5 % en Bretagne, Sud-Ouest, Sud-Est (listes modifiables).
 - Retour FLOW ONE : l'export d'origine octet pour octet ; seuls DEOCARRIER, CARRIERDESIGNATION et les colonnes de la table
@@ -109,4 +110,4 @@ Mentions des libellés : feuille de comparaison → KUEHNE (saison, villes de li
 
 En attente du propriétaire : colonnes palettes dans l'export (pour l'instant saisie dans l'outil), sens des DEONUMERIC,
 codes FLOW ONE de BMV et XPO, formats d'import des transporteurs (CSV provisoire en attendant, `FORMATS_TRANSPORTEUR`),
-XPO taxé au nombre de places seulement ou aussi au poids (130 kg par place ?).
+poids maximum BMV (existe, valeur non donnée), adresse du site.

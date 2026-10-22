@@ -117,6 +117,7 @@ egal(offre('BMV', $exp('01', 2000.0), $pal(1, 0), $R, $G, 0)['base'], round(40 *
 egal(offre('BMV', $exp('75', 50.0), $pal(1, 0), $R, $G, 0)['exclu'][0] ?? '', 'département 75 absent de la grille', 'BMV hors grille');
 egal(offre('XPO', $exp('01', 500.0), $pal(2, 1), $R, $G, 25.0)['lignes'][0][0], 'Grille 5 places (80×85 = 1, 80×120 = 2)', 'XPO 2×80×120 + 1×80×85 = 5 places');
 egal(offre('XPO', $exp('01', 500.0), $pal(2, 1), $R, $G, 25.0)['total'], round((130 + 3.1) * 1.25, 2), 'XPO total avec taxe 25 %');
+egal(offre('XPO', $exp('01', 50.0), $pal(1, 0), $R, $G, 0)['base'], offre('XPO', $exp('01', 1500.0), $pal(1, 0), $R, $G, 0)['base'], 'XPO : le poids ne change pas le prix');
 egal(offre('XPO', $exp('75', 100.0), $pal(0, 1), $R, $G, 0)['base'], round(50 * 1.3 * 1.05 + 3.1, 2), 'XPO région parisienne +5 %');
 egal(offre('XPO', $exp('06', 100.0, '2026-06-15'), $pal(0, 1), $R, $G, 0)['base'], round(60 * 1.12 + 3.1, 2), 'XPO saison en juin');
 egal(offre('XPO', $exp('06', 100.0, '2026-10-15'), $pal(0, 1), $R, $G, 0)['base'], round(60 + 3.1, 2), 'XPO hors saison en octobre');
