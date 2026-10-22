@@ -1,0 +1,8 @@
+{
+  "name": "robot-transport-euro-distribution",
+  "private": true,
+  "description": "Crée les expéditions chez les transporteurs à partir du site transport.",
+  "main": "robot.js",
+  "scripts": { "start": "node robot.js", "essai": "node robot.js --une-fois" },
+  "dependencies": { "playwright": "1.56.1" }
+}

@@ -112,6 +112,15 @@ Règles (validées par le propriétaire) :
   de correspondance changent (contrôle avant export). Bons groupés : prix, poids et palettes sur le bon principal, 0 sur les autres.
   Sens de DEONUMERIC01 à 06 : pas encore donné par le propriétaire, ne jamais le deviner.
 
+Robot (phase 2, `transport/robot/`, Node.js + Playwright) : tourne sur un VPS OVHcloud (VPS-1, Canada, Ubuntu 24.04 ; O2switch ne peut pas
+piloter un navigateur). Bouton du site « Créer chez les transporteurs » → `data/envois.json` (file d'attente) ; le robot lit `api.php?a=robot_a_faire`
+et répond `robot_resultat`, identifié par l'en-tête `X-Jeton-Robot` (= `jeton_robot` de config.php). Identifiants transporteurs dans `robot/.env`.
+XPO = Station Chargeur (xpo.station-chargeur.com, éditeur Teliae), cadre « Appli », formulaire `saisie_int_rapide.php` : #DateExpe (JJ/MM/AA),
+#Nom, #Adresse1/2, #CdPostal, #Ville, #CdInseePays, #quefairedecedestinataireT (destinataire temporaire), #NumBl (n° d'expédition), #nbPalette1,
+#nbUnitesTaxables (places), #Poids, #Instructions et #Remarques (70 car.), bouton FormExpedentCompletSubmitBt. MODE=repetition remplit puis annule.
+La secrétaire imprime les étiquettes et transmet les pré-annonces elle-même (Encours). BMV = Besoftweb (pas d'import ; API « Router/Api » à demander),
+KUEHNE = API BookingRoad (activation par le commercial). Pas d'import de fichier XPO actif (à demander à XPO/Teliae).
+
 Classeur Excel (constats) : les prix viennent de « Tarifs à changer chaque année ». La feuille de comparaison contient des erreurs
 (KUEHNE ≥ 500 kg décalés de plusieurs lignes ; XPO 76 et 79-85 majorés, 75/77/78 majorés deux fois, 90 multiplié par les frais ;
 formule de saison XPO sur d'autres départements avec des dates de 2020) : l'outil ne les reprend pas et les signale à l'import.
