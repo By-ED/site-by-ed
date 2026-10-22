@@ -208,8 +208,6 @@ function fr(float $x, int $dec = 2): string
     return str_contains($s, ',') ? rtrim(rtrim($s, '0'), ',') : $s;
 }
 
-function euros(float $x): string { return number_format($x, 2, ',', "\u{202f}") . ' €'; }
-
 // Nombre pour FLOW ONE : point décimal, sans zéros inutiles (34.27, 16.8, 100).
 function nombreFlowOne(float $x): string
 {
@@ -524,38 +522,6 @@ function offre(string $t, array $e, array $pal, array $R, array $G, float $gasoi
         'lignes' => array_map(fn ($l) => [$l[0], round($l[1], 2)], $lignes), 'notes' => $notes];
 }
 
-// Économie minimale (€) pour proposer une autre répartition des palettes : en dessous, ce serait du bruit.
-const ECONOMIE_MIN = 5.0;
-
-// Autre répartition des palettes (même volume) qui coûterait moins cher que le moins cher actuel, à vérifier selon la marchandise.
-function suggestion(array $e, array $R, array $G, array $gasoils, float $actuel): ?array
-{
-    $pal = $e['palettes'];
-    $mieux = null;
-    for ($a = 0; $a <= 6; $a++) {
-        for ($b = 0; $b <= 12; $b++) {
-            if ($a + $b === 0 || $a * 2 + $b > 12 || ($a === $pal['n120'] && $b === $pal['n85'])) continue;
-            $surface = $a * PALETTES['n120']['surface'] + $b * PALETTES['n85']['surface'];
-            $h = ceil($pal['volume'] / $surface * 100) / 100;
-            if ($h < 0.5) continue;
-            $alt = ['n120' => $a, 'n85' => $b, 'hauteur' => $h, 'volume' => $pal['volume']];
-            foreach (TRANSPORTEURS as $t) {
-                $o = offre($t, $e, $alt, $R, $G, $gasoils[$t]);
-                if (!isset($o['total']) || $o['total'] > $actuel - ECONOMIE_MIN) continue;
-                if ($mieux === null || $o['total'] < $mieux['total'] - 0.005 || (abs($o['total'] - $mieux['total']) < 0.005 && $a + $b < $mieux['n120'] + $mieux['n85']))
-                    $mieux = ['n120' => $a, 'n85' => $b, 'hauteur' => $h, 'transporteur' => $t, 'total' => $o['total'], 'economie' => round($actuel - $o['total'], 2)];
-            }
-        }
-    }
-    if ($mieux === null) return null;
-    $desc = implode(' + ', array_filter([
-        $mieux['n120'] ? $mieux['n120'] . ' palette' . ($mieux['n120'] > 1 ? 's' : '') . ' 80×120' : null,
-        $mieux['n85'] ? $mieux['n85'] . ' palette' . ($mieux['n85'] > 1 ? 's' : '') . ' 80×85' : null,
-    ]));
-    $mieux['texte'] = "$desc de " . fr($mieux['hauteur']) . " m au plus : {$mieux['transporteur']} à " . euros($mieux['total']) . ' (−' . euros($mieux['economie']) . '), si la marchandise le permet.';
-    return $mieux;
-}
-
 function zoneDe(string $dep, array $R): ?string
 {
     foreach ($R['taux']['zones'] as $nom => $deps) if (in_array($dep, $deps, true)) return $nom;
@@ -612,7 +578,6 @@ function calculerLot(array $export, array $saisies, array $R, ?array $G, array $
         $e['zone'] = zoneDe($e['dep'], $R);
         $e['seuil'] = $e['zone'] ? (float) $R['taux']['seuil_zones'] : (float) $R['taux']['seuil'];
         $e['au_dessus'] = $e['taux'] !== null && $e['taux'] > $e['seuil'] + 1e-9;
-        $e['suggestion'] = suggestion($e, $R, $G, $g, $valides[$e['moins_cher']]['total']);
     }
     unset($e);
 

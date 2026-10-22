@@ -188,12 +188,6 @@ $R3 = $R;
 $R3['transporteurs']['KUEHNE']['rdv'] = null;
 verifier(in_array('Réglage à compléter : KUEHNE : frais de rendez-vous.', calculerLot($export, $saisies, $R3, $G, [])['blocages'], true), 'réglage vide : blocage');
 
-// Piste d'économie : 4 palettes 80×120 → KUEHNE et BMV exclus ; mieux réparti, l'envoi passe chez KUEHNE.
-$e = $par['1002'];
-$e['palettes'] = $pal(4, 0, 1.0);
-$s = suggestion($e, $R, $G, $R['gasoil']['2026-10'], 999.0);
-verifier($s !== null && $s['n120'] + $s['n85'] <= 3, 'piste : moins de palettes');
-
 // ---------- Fichiers de sortie ----------
 
 $retour = retourFlowOne($brut, $c, $R);

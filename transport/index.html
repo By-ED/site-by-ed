@@ -107,7 +107,6 @@ select{font:inherit;padding:6px 8px;border:1.5px solid var(--line);border-radius
 .bloc table{font-size:13px}
 .bloc td{padding:3px 0;border:0}
 tr.tot td{border-top:1px solid var(--line);font-weight:700;padding-top:5px}
-.piste{background:var(--ok-soft);color:var(--ok);border-radius:6px;padding:8px 10px;font-size:13px}
 .barre{position:sticky;bottom:0;z-index:4;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line)}
 .barre .sep{flex:1}
 /* formulaires */
@@ -423,7 +422,6 @@ function detailExpedition(e){
     ["Dans l'export", e.transporteur_export],
   ].filter(([, v]) => v);
   return h("div", {style:"display:grid;gap:10px"},
-    e.suggestion ? h("div", {class:"piste"}, h("strong", {}, "Piste d'économie : "), e.suggestion.texte) : null,
     e.notes.length ? h("div", {class:"boite orange"}, e.notes.map(n => h("p", {}, n))) : null,
     h("div", {class:"detail-grille"}, blocs,
       h("div", {class:"bloc"}, h("h4", {}, "Expédition " + e.num), h("table", {}, h("tbody", {}, infos.map(([k, v]) => h("tr", {}, h("td", {class:"muted"}, k), h("td", {}, v))))))));
