@@ -523,9 +523,13 @@ function vueHistorique(){
 async function chargerReglages(){
   const d = await api("reglages");
   S.R = d.reglages; S.meta = d;
-  // Le mois en cours (et le suivant) apparaissent toujours dans la taxe gasoil, même vides.
+  moisGasoilVisibles();
+}
+// Le mois en cours et le suivant apparaissent toujours dans la taxe gasoil, même vides
+// (sans taux enregistré, le serveur renvoie une liste vide, qu'on remplace d'abord par un objet).
+function moisGasoilVisibles(){
+  if (!S.R.gasoil || Array.isArray(S.R.gasoil)) S.R.gasoil = {};
   const m = moisCourant(); for (const x of [m, moisSuivant(m)]) if (!S.R.gasoil[x]) S.R.gasoil[x] = {};
-  if (Array.isArray(S.R.gasoil)) S.R.gasoil = {};
 }
 const moisCourant = () => new Date().toISOString().slice(0, 7);
 function moisSuivant(m){ let [a, n] = m.split("-").map(Number); n++; if (n > 12){ n = 1; a++; } return a + "-" + String(n).padStart(2, "0"); }
@@ -566,7 +570,7 @@ function enregistrerReglages(){
   agir(async () => {
     const d = await api("reglages_enregistrer", {reglages:S.R});
     S.R = d.reglages;
-    const m = moisCourant(); for (const x of [m, moisSuivant(m)]) if (!S.R.gasoil[x]) S.R.gasoil[x] = {};
+    moisGasoilVisibles();
     await chargerEtat();
     S.message = "Réglages enregistrés.";
   });
