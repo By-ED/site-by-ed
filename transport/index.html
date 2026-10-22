@@ -346,7 +346,7 @@ function vueDeparts(){
       h("h2", {}, "Importer les départs du jour"),
       h("p", {}, "Exportez « Saisie des préparations expédition » depuis FLOW ONE, puis choisissez le fichier .csv ici, sans l'ouvrir avant dans Excel."),
       h("div", {class:"actions"}, boutonImport("Importer l'export FLOW ONE", true))),
-    et.grille ? null : h("div", {class:"boite orange"}, "La grille tarifaire n'est pas encore importée : ", h("button", {class:"lien", type:"button", onclick:() => aller("reglages")}, "Réglages"), "."));
+    et.grille ? null : h("div", {class:"boite orange"}, h("p", {}, "La grille tarifaire n'est pas encore importée : ", h("button", {class:"lien", type:"button", onclick:() => aller("reglages")}, "Réglages"), ".")));
 
   const exps = lot.expeditions;
   const attribuees = exps.filter(e => e.choix);
