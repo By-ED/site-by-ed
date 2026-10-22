@@ -118,8 +118,13 @@ et répond `robot_resultat`, identifié par l'en-tête `X-Jeton-Robot` (= `jeton
 XPO = Station Chargeur (xpo.station-chargeur.com, éditeur Teliae), cadre « Appli », formulaire `saisie_int_rapide.php` : #DateExpe (JJ/MM/AA),
 #Nom, #Adresse1/2, #CdPostal, #Ville, #CdInseePays, #quefairedecedestinataireT (destinataire temporaire), #NumBl (n° d'expédition), #nbPalette1,
 #nbUnitesTaxables (places), #Poids, #Instructions et #Remarques (70 car.), bouton FormExpedentCompletSubmitBt. MODE=repetition remplit puis annule.
-La secrétaire imprime les étiquettes et transmet les pré-annonces elle-même (Encours). BMV = Besoftweb (pas d'import ; API « Router/Api » à demander),
-KUEHNE = API BookingRoad (activation par le commercial). Pas d'import de fichier XPO actif (à demander à XPO/Teliae).
+KUEHNE = même logiciel Station Chargeur (kn-overland.station-chargeur.com/kn-overland/, identifiants KN_*) : même formulaire,
+sans unités taxables (champ caché), case #bPrendreRDV. BMV = Besoft Web (besoftweb.groupebmv.com, toujours en https, identifiants BMV_*),
+page POSITION/CREATE : #DATE_CONTRAT (JJ/MM/AAAA), #DropDown_IDPRODUIT = MES (Messagerie, choix de la secrétaire), #REF, #NOM_DES, #AD1/2/3_DES,
+#IDPAYS_DES, #DPT_DES, #CP_DES, #VILLE_DES, #INSTRUCTION_LIV, #LST_OPTION RDV, #NBCOLIS (palettes, à confirmer), #POIDS ; #BtnEnregistrer_pos / #BtnFermer.
+`node robot.js --essai=XPO|KUEHNE|BMV` : connexion + expédition inventée, remplie puis annulée. Service systemd `robot-transport` sur le VPS
+(ubuntu@54.39.110.129, clé SSH ~/.ssh/robot_transport_ed25519 du Mac, connexion par mot de passe désactivée).
+La secrétaire imprime les étiquettes et transmet les pré-annonces elle-même (Encours).
 
 Classeur Excel (constats) : les prix viennent de « Tarifs à changer chaque année ». La feuille de comparaison contient des erreurs
 (KUEHNE ≥ 500 kg décalés de plusieurs lignes ; XPO 76 et 79-85 majorés, 75/77/78 majorés deux fois, 90 multiplié par les frais ;
