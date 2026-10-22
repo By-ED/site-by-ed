@@ -139,6 +139,17 @@ verifier(isset(offre('XPO', $exp('01', 500.0), $pal(0, 12), $R, $G, 0)['total'])
 verifier(str_starts_with(offre('XPO', $exp('01', 500.0), $pal(6, 1), $R, $G, 0)['exclu'][0] ?? '', '13 places'), 'XPO 13 places exclu');
 verifier(isset(offre('XPO', $exp('01', 500.0), $pal(1, 0, 2.2), $R, $G, 0)['total']), 'XPO hauteur 2,20 m acceptée');
 
+// Autres formats de palettes : acceptés par BMV et KUEHNE (au poids), refusés par XPO (prix aux places 80×85 / 80×120).
+$p120 = ['n120' => 0, 'n85' => 0, 'n100x120' => 2, 'hauteur' => 1.0, 'volume' => 2.4];
+egal(nbPalettes($p120 + ['n70x240' => 1]), 3, 'nombre de palettes tous formats');
+egal(surfacePalettes(['n100x100' => 1, 'n70x240' => 1, 'n85' => 1]), 1.0 + 1.68 + 0.68, 'surface tous formats');
+egal(placesXpo(['n120' => 2, 'n85' => 1]), 5, 'places XPO');
+egal(placesXpo(['n120' => 1, 'n100x130' => 1]), null, 'places XPO impossibles avec un 100×130');
+egal(offre('XPO', $exp('01', 500.0), $p120, $R, $G, 0)['exclu'][0] ?? '', 'palettes 100×120 non acceptées', 'XPO refuse les 100×120');
+verifier(isset(offre('KUEHNE', $exp('01', 500.0), $p120, $R, $G, 0)['total']), 'KUEHNE accepte les 100×120');
+verifier(isset(offre('BMV', $exp('01', 500.0), $p120, $R, $G, 0)['total']), 'BMV accepte 2 palettes 100×120 (2,4 m³)');
+egal(offre('BMV', $exp('01', 500.0), ['n70x240' => 2, 'hauteur' => 1.3, 'volume' => 4.368], $R, $G, 0)['exclu'][0] ?? '', 'volume 4,37 m³ (max 4 m³)', 'BMV : 2 palettes 70×240 de 1,30 m dépassent 4 m³');
+
 // ---------- Lot complet ----------
 
 $brut = exportTest();
@@ -149,6 +160,10 @@ exception(fn () => lireExport(mb_convert_encoding($brut, 'UTF-8', 'Windows-1252'
 exception(fn () => lireExport("A;B\r\n1;2\r\n"), '/colonnes absentes/', 'fichier qui n\'est pas l\'export');
 
 $saisies = ['1001' => ['n120' => 1, 'hauteur' => 1.2], '1002' => ['n120' => 2, 'hauteur' => '150'], '1003' => ['n85' => 2, 'hauteur' => 1.0, 'force' => 'XPO']];
+$c4 = calculerLot(lireExport(exportTest()), ['1005' => ['n100x130' => 1, 'hauteur' => 1.5]], reglagesTest(), grilleTest(), []);
+$e5 = array_column($c4['expeditions'], null, 'num')['1005'];
+egal($e5['palettes']['volume'], 1.95, 'volume d\'une palette 100×130 de 1,50 m');
+verifier($e5['choix'] !== null && $e5['choix'] !== 'XPO', 'palette 100×130 : un transporteur au poids est retenu');
 $c = calculerLot($export, $saisies, $R, $G, []);
 $par = array_column($c['expeditions'], null, 'num');
 egal(count($c['expeditions']), 4, 'lot : 4 expéditions (1003 + 1004 groupés)');

@@ -112,7 +112,8 @@ ul.compar li .num{white-space:nowrap}
 ul.compar li.choisi{font-weight:800}
 ul.compar li.exclu{color:var(--muted);font-size:13px}
 ul.compar li.exclu span:last-child{text-align:right}
-.saisie4{display:grid;grid-template-columns:repeat(4,64px);gap:2px 8px;font-size:12px;color:var(--muted);white-space:nowrap}
+.saisie4{display:grid;grid-template-columns:repeat(4,64px);gap:6px 8px;font-size:12px;color:var(--muted);white-space:nowrap}
+.saisie4 label{display:grid;gap:2px}
 input[type=text].mini{font:inherit;font-family:var(--f-mono);width:58px;padding:5px 6px;border:1.5px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);text-align:right}
 input[type=text].mini.saisi{border-color:var(--accent);background:var(--accent-soft)}
 .pal{display:grid;grid-template-columns:auto auto;gap:4px 6px;align-items:center;font-size:12px;color:var(--muted)}
@@ -160,6 +161,8 @@ details.section > .corps{padding:0 16px 16px;display:grid;gap:14px}
 <script>
 "use strict";
 const T = ["BMV", "KUEHNE", "XPO"];
+// Formats de palettes (mêmes clés que PALETTES dans moteur.php).
+const FORMATS = [["n120", "80×120"], ["n85", "80×85"], ["n100x100", "100×100"], ["n100x120", "100×120"], ["n100x130", "100×130"], ["n70x240", "70×240"]];
 const S = {vue:"chargement", etat:null, ouverts:{}, occupe:false, message:null, erreur:null, R:null, meta:null, histo:null, importClasseur:null};
 const $app = document.getElementById("app");
 
@@ -405,7 +408,8 @@ function ligneExpedition(e, lot){
   const ouvert = !!S.ouverts[e.num];
   const s = e.saisie;
   // Palettes manquantes : les cases à remplir sont encadrées de rouge.
-  const manque = (k) => !e.palettes && ["n120", "n85", "hauteur"].includes(k) && (k === "hauteur" ? s.hauteur == null : s.n120 == null && s.n85 == null);
+  const aucunFormat = FORMATS.every(([k]) => s[k] == null);
+  const manque = (k) => !e.palettes && (k === "hauteur" ? s.hauteur == null : FORMATS.some(([f]) => f === k) && aucunFormat);
   const champ = (k, val, lib, source, place) => h("input", {type:"text", inputmode:"decimal", class:"mini" + (source === "saisie" ? " saisi" : "") + (manque(k) ? " vide-champ" : ""), value:saisieNb(val), placeholder:place || null,
     "aria-label":lib + " — " + e.num, title:lib + (source === "export" ? " (lu dans l'export)" : source === "saisie" ? " (saisi)" : ""), "data-k":e.num + ":" + k,
     onchange:ev => saisir(e.num, {[k]:ev.target.value.trim()})});
@@ -440,10 +444,11 @@ function ligneExpedition(e, lot){
       h("div", {class:"exp-lieu"}, (e.dest.cp || "") + " " + e.dest.ville),
       h("div", {class:"exp-lieu"}, "Commande " + eur(e.ht) + " HT")),
     h("td", {},
-      h("div", {class:"saisie4", "aria-hidden":"true"}, h("span", {}, "80×120"), h("span", {}, "80×85"), h("span", {}, "Haut. (m)"), h("span", {}, "Poids (kg)")),
+      // Nombre de palettes par format, puis hauteur et poids pesé : une étiquette au-dessus de chaque case.
       h("div", {class:"saisie4"},
-        champ("n120", s.n120, "Palettes 80×120", s.sources.n120), champ("n85", s.n85, "Palettes 80×85", s.sources.n85),
-        champ("hauteur", s.hauteur, "Hauteur (m)", s.sources.hauteur), champ("poids_pese", s.poids_pese, "Poids pesé (kg)", s.sources.poids_pese, nb(e.poids_export, 0))),
+        FORMATS.map(([k, lib]) => h("label", {}, lib, champ(k, s[k], "Palettes " + lib, s.sources[k]))),
+        h("label", {}, "Haut. (m)", champ("hauteur", s.hauteur, "Hauteur (m)", s.sources.hauteur)),
+        h("label", {}, "Poids (kg)", champ("poids_pese", s.poids_pese, "Poids pesé (kg)", s.sources.poids_pese, nb(e.poids_export, 0)))),
       h("label", {class:"case", title:e.rdv_auto ? "Rendez-vous détecté dans les consignes" : null},
         h("input", {type:"checkbox", checked:e.rdv, onchange:ev => saisir(e.num, {rdv:ev.target.checked})}), "rendez-vous" + (e.rdv_auto ? " (consignes)" : ""),
         e.palettes ? h("span", {style:"margin-left:auto"}, nb(e.palettes.volume, 2) + " m³") : null)),
@@ -514,7 +519,7 @@ function vueHistorique(){
           h("thead", {}, h("tr", {}, ["Date", "Expédition", "Client", "Dép.", "Transporteur", "Palettes", "Poids", "Montant HT", "Transport", "Taux"].map((x, i) => h("th", {class:i >= 5 ? "r" : null}, x)))),
           h("tbody", {}, d.expeditions.map(x => h("tr", {},
             h("td", {}, dateFr(x.date)), h("td", {class:"num"}, x.num), h("td", {}, x.client), h("td", {}, x.dep),
-            h("td", {}, x.transporteur + (x.force ? " (forcé)" : "")), h("td", {class:"r num"}, x.n120 + x.n85), h("td", {class:"r num"}, nb(x.poids, 0)),
+            h("td", {}, x.transporteur + (x.force ? " (forcé)" : "")), h("td", {class:"r num"}, x.nb_palettes ?? x.n120 + x.n85), h("td", {class:"r num"}, nb(x.poids, 0)),
             h("td", {class:"r num"}, eur(x.ht)), h("td", {class:"r num"}, eur(x.total)), h("td", {class:"r num"}, pct(x.ht ? x.total / x.ht * 100 : null))))))))),
     ]);
 }

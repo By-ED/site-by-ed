@@ -214,7 +214,7 @@ try {
                 foreach ((array) ($entree['saisie'] ?? []) as $k => $v) {
                     $v = match ($k) {
                         'poids_pese', 'hauteur' => $v === null || $v === '' ? null : (nombre($v) ?? erreur('Nombre attendu.')),
-                        'n120', 'n85' => $v === null || $v === '' ? null : (($x = nombre($v)) !== null && $x >= 0 && $x <= 50 && floor($x) == $x ? (int) $x : erreur('Nombre de palettes entier attendu.')),
+                        'n120', 'n85', 'n100x100', 'n100x120', 'n100x130', 'n70x240' => $v === null || $v === '' ? null : (($x = nombre($v)) !== null && $x >= 0 && $x <= 50 && floor($x) == $x ? (int) $x : erreur('Nombre de palettes entier attendu.')),
                         'rdv' => $v === null ? null : (bool) $v,
                         'force' => $v === null || $v === '' ? null : (in_array($v, TRANSPORTEURS, true) ? $v : erreur('Transporteur inconnu.')),
                         default => erreur('Champ inconnu.'),

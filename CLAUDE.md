@@ -87,13 +87,15 @@ sur les sites des transporteurs ; identifiants uniquement dans un `.env` non ver
   transport.by-ed.fr écarté pour l'instant (by-ed.fr en maintenance, DNS chez Eolas).
 - `moteur.php` : export FLOW ONE (Windows-1252, « ; », CP complété à 5 chiffres, bons regroupés par ORDEXPNUM), prix, choix, taux,
   fichiers de sortie, historique. `classeur.php` : import du classeur Excel « Aide décision » (xlsx lu sans bibliothèque).
-  `api.php` : routes. `index.html` : Départs du jour / Historique / Réglages. `php tests/tester.php` : tests. `construire-zip.sh` → zip O2switch.
+  `api.php` : routes. `index.html` : Départs du jour / Historique / Réglages. `php tests/tester.php` : tests (sur le Mac : PHP de MAMP, `/Applications/MAMP/bin/php/php8.3.30/bin/php`). `construire-zip.sh` → zip O2switch.
 - Données : `data/reglages.json`, `grilles.json`, `lot.json` (export en cours + saisies), `colonnes.json`, `historique/AAAA-MM.json`.
 - Page aux couleurs d'Euro Distribution (by-ed.fr) : noir #020202, crème #F4F2EA, orange #CF4716, polices Questrial/Archivo ;
   variables `--marque*` et `--accent` en tête du CSS de `index.html`. Logo `transport/logo.png` (badge rond, repris de by-ed.fr).
 
 Règles (validées par le propriétaire) :
 - Contraintes : BMV 3 palettes, 4 m³, 2,00 m ; KUEHNE 3 palettes, 2,10 m ; XPO 12 places (80×85 = 1 place, 80×120 = 2), 2,20 m.
+  Formats de palettes : 80×120, 80×85, 100×100, 100×120, 100×130, 70×240 (`PALETTES`). XPO ne prend que 80×85 et 80×120
+  (réglage `formats`) ; BMV et KUEHNE prennent tous les formats.
   Transporteur exclu s'il dépasse ; aucun possible ou palettes manquantes → ligne rouge, rien d'attribué.
 - Prix de base = grille × révision × saison × majoration du département + frais (fixes, livraison urbaine, rendez-vous, accès difficile).
   Prix du transport = base × (1 + taxe gasoil) ; la taxe s'applique sur tout. Taux gasoil par mois et par transporteur :

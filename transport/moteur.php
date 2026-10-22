@@ -5,16 +5,25 @@
 declare(strict_types=1);
 
 const TRANSPORTEURS = ['BMV', 'KUEHNE', 'XPO'];
-// Surface au sol (m²) et nombre de places XPO de chaque format : 80×85 = 1 place (« 0,5 palette »), 80×120 = 2.
+// Formats de palettes : surface au sol (m²) et places XPO (80×85 = 1 place, « 0,5 palette » ; 80×120 = 2).
+// Les autres formats n'ont pas de places : XPO ne les prend pas.
 const PALETTES = [
     'n120' => ['libelle' => '80×120', 'surface' => 0.96, 'places' => 2],
     'n85' => ['libelle' => '80×85', 'surface' => 0.68, 'places' => 1],
+    'n100x100' => ['libelle' => '100×100', 'surface' => 1.00, 'places' => null],
+    'n100x120' => ['libelle' => '100×120', 'surface' => 1.20, 'places' => null],
+    'n100x130' => ['libelle' => '100×130', 'surface' => 1.30, 'places' => null],
+    'n70x240' => ['libelle' => '70×240', 'surface' => 1.68, 'places' => null],
 ];
 const COLONNES_REQUISES = ['ORDNOORDER', 'ORDEXPNUM', 'DEOZIPCODE', 'ORDTOTALWEIGHT', 'ORDHTBASETOTAL', 'ORDEXPEDATE', 'DEOCARRIER', 'CARRIERDESIGNATION'];
 // Informations lues dans l'export (si la colonne est indiquée dans les réglages) et informations écrites dans le retour FLOW ONE.
 const INFOS_LECTURE = [
     'n120' => 'Nombre de palettes 80×120',
     'n85' => 'Nombre de palettes 80×85',
+    'n100x100' => 'Nombre de palettes 100×100',
+    'n100x120' => 'Nombre de palettes 100×120',
+    'n100x130' => 'Nombre de palettes 100×130',
+    'n70x240' => 'Nombre de palettes 70×240',
     'hauteur' => 'Hauteur des palettes (m ou cm)',
     'volume' => 'Volume (m³)',
     'poids_pese' => 'Poids pesé (kg)',
@@ -26,11 +35,15 @@ const INFOS_ECRITURE = [
     'nb_palettes' => 'Nombre de palettes',
     'n120' => 'Nombre de palettes 80×120',
     'n85' => 'Nombre de palettes 80×85',
+    'n100x100' => 'Nombre de palettes 100×100',
+    'n100x120' => 'Nombre de palettes 100×120',
+    'n100x130' => 'Nombre de palettes 100×130',
+    'n70x240' => 'Nombre de palettes 70×240',
     'hauteur' => 'Hauteur (m)',
     'numero_suivi' => 'N° d\'expédition / de suivi du transporteur',
 ];
 // Informations d'une expédition : écrites en entier sur le bon principal, 0 sur les autres bons du groupe.
-const INFOS_QUANTITES = ['prix_transport', 'poids', 'nb_palettes', 'n120', 'n85'];
+const INFOS_QUANTITES = ['prix_transport', 'poids', 'nb_palettes', 'n120', 'n85', 'n100x100', 'n100x120', 'n100x130', 'n70x240'];
 const MOIS_FR = [1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
 // ---------- Réglages ----------
@@ -42,6 +55,7 @@ function reglagesParDefaut(): array
         'code_flowone' => '', 'designation_flowone' => '', 'compte' => '',
         'palettes_max' => null, 'places_max' => null, 'volume_max' => null, 'hauteur_max' => null, 'poids_max' => null,
         'coef_revision' => 1.0, 'frais_fixes' => 0.0,
+        'formats' => [],
         'saison' => ['pct' => 0.0, 'du' => '05-01', 'au' => '08-31', 'departements' => []],
         'urbain' => ['montant' => 0.0, 'lieux' => []],
         'rdv' => 0.0,
@@ -55,7 +69,7 @@ function reglagesParDefaut(): array
             'KUEHNE' => $t(['code_flowone' => '3', 'designation_flowone' => 'KUEHNE', 'palettes_max' => 3, 'hauteur_max' => 2.1,
                 'frais_fixes' => null, 'saison' => ['pct' => null, 'du' => '05-01', 'au' => '08-31', 'departements' => []],
                 'urbain' => ['montant' => null, 'lieux' => []], 'rdv' => null]),
-            'XPO' => $t(['designation_flowone' => 'XPO', 'places_max' => 12, 'hauteur_max' => 2.2,
+            'XPO' => $t(['designation_flowone' => 'XPO', 'places_max' => 12, 'hauteur_max' => 2.2, 'formats' => ['n85', 'n120'],
                 'frais_fixes' => null, 'saison' => ['pct' => null, 'du' => '05-01', 'au' => '08-31', 'departements' => []],
                 'difficile' => ['par_100kg' => null, 'max' => null]]),
         ],
@@ -148,6 +162,7 @@ function nettoyerReglages(array $in): array
         $maj = [];
         foreach ((array) $x['majorations'] as $d => $p) if (($p = $num($p, "$t, majoration $d")) !== null && codeDep($d) !== '') $maj[codeDep($d)] = $p;
         $x['majorations'] = $maj;
+        $x['formats'] = array_values(array_intersect((array) $x['formats'], array_keys(PALETTES)));
         $x['difficile'] = ['par_100kg' => $num($x['difficile']['par_100kg'] ?? null, "$t, accès difficile"), 'max' => $num($x['difficile']['max'] ?? null, "$t, accès difficile maximum")];
     }
     unset($x);
@@ -391,25 +406,23 @@ function construireExpeditions(array $export, array $saisies, array $R): array
         $s = $saisies[$num] ?? [];
         $choisir = fn (string $k) => array_key_exists($k, $s) && $s[$k] !== null && $s[$k] !== '' ? ['saisie', nombre($s[$k])] : (isset($lu[$k]) ? ['export', $lu[$k]] : [null, null]);
         [$srcPoids, $poidsPese] = $choisir('poids_pese');
-        [$src120, $n120] = $choisir('n120');
-        [$src85, $n85] = $choisir('n85');
         [$srcH, $h] = $choisir('hauteur');
         [, $vol] = $choisir('volume');
-        $e['saisie'] = [
-            'poids_pese' => $poidsPese, 'n120' => $n120 === null ? null : (int) round($n120), 'n85' => $n85 === null ? null : (int) round($n85),
-            'hauteur' => hauteurM($h), 'rdv' => $s['rdv'] ?? null, 'force' => $s['force'] ?? null,
-            'sources' => ['poids_pese' => $srcPoids, 'n120' => $src120, 'n85' => $src85, 'hauteur' => $srcH],
-        ];
+        $e['saisie'] = ['poids_pese' => $poidsPese, 'hauteur' => hauteurM($h), 'rdv' => $s['rdv'] ?? null, 'force' => $s['force'] ?? null,
+            'sources' => ['poids_pese' => $srcPoids, 'hauteur' => $srcH]];
+        foreach (PALETTES as $k => $_) {
+            [$src, $n] = $choisir($k);
+            $e['saisie'][$k] = $n === null ? null : (int) round($n);
+            $e['saisie']['sources'][$k] = $src;
+        }
         $e['poids'] = $poidsPese !== null && $poidsPese > 0 ? $poidsPese : $e['poids_export'];
         $e['rdv_auto'] = (bool) preg_match('/\bRDV\b|RENDEZ[\s-]*VOUS/i', $e['consignes']);
         $e['rdv'] = is_bool($e['saisie']['rdv']) ? $e['saisie']['rdv'] : $e['rdv_auto'];
 
-        $nb120 = $e['saisie']['n120'] ?? 0;
-        $nb85 = $e['saisie']['n85'] ?? 0;
-        if ($nb120 + $nb85 > 0 && $e['saisie']['hauteur'] !== null) {
-            $surface = $nb120 * PALETTES['n120']['surface'] + $nb85 * PALETTES['n85']['surface'];
-            $e['palettes'] = ['n120' => $nb120, 'n85' => $nb85, 'hauteur' => $e['saisie']['hauteur'],
-                'volume' => round($vol !== null && $vol > 0 ? $vol : $surface * $e['saisie']['hauteur'], 3)];
+        $pal = array_map(fn ($k) => $e['saisie'][$k] ?? 0, array_combine(array_keys(PALETTES), array_keys(PALETTES)));
+        if (nbPalettes($pal) > 0 && $e['saisie']['hauteur'] !== null) {
+            $e['palettes'] = $pal + ['hauteur' => $e['saisie']['hauteur'],
+                'volume' => round($vol !== null && $vol > 0 ? $vol : surfacePalettes($pal) * $e['saisie']['hauteur'], 3)];
         } else {
             $e['palettes'] = null;
             $e['erreurs'][] = 'Données palettes manquantes';
@@ -459,16 +472,40 @@ function lieuUrbain(array $lieux, string $dep, string $ville): ?string
     return null;
 }
 
+function nbPalettes(array $pal): int
+{
+    return (int) array_sum(array_map(fn ($k) => $pal[$k] ?? 0, array_keys(PALETTES)));
+}
+
+function surfacePalettes(array $pal): float
+{
+    return array_sum(array_map(fn ($k, $f) => ($pal[$k] ?? 0) * $f['surface'], array_keys(PALETTES), PALETTES));
+}
+
+// Places XPO (80×85 = 1, 80×120 = 2) ; null dès qu'un format n'a pas de places.
+function placesXpo(array $pal): ?int
+{
+    $n = 0;
+    foreach (PALETTES as $k => $f) {
+        if (($pal[$k] ?? 0) === 0) continue;
+        if ($f['places'] === null) return null;
+        $n += $pal[$k] * $f['places'];
+    }
+    return $n;
+}
+
 // Prix d'un transporteur pour une expédition, ou les raisons de son exclusion.
 // Prix de base = grille × révision × saison × majoration + frais ; prix du transport = base × (1 + taxe gasoil).
 function offre(string $t, array $e, array $pal, array $R, array $G, float $gasoil): array
 {
     $tr = $R['transporteurs'][$t];
-    $nb = $pal['n120'] + $pal['n85'];
-    $places = $pal['n120'] * PALETTES['n120']['places'] + $pal['n85'] * PALETTES['n85']['places'];
+    $nb = nbPalettes($pal);
+    $places = placesXpo($pal);
     $exclu = [];
+    foreach (PALETTES as $k => $f)
+        if (($pal[$k] ?? 0) > 0 && $tr['formats'] && !in_array($k, $tr['formats'], true)) $exclu[] = "palettes {$f['libelle']} non acceptées";
     if ($tr['palettes_max'] !== null && $nb > $tr['palettes_max']) $exclu[] = "$nb palettes (max " . fr((float) $tr['palettes_max']) . ')';
-    if ($tr['places_max'] !== null && $places > $tr['places_max'])
+    if ($tr['places_max'] !== null && $places !== null && $places > $tr['places_max'])
         $exclu[] = "$places places (max " . fr((float) $tr['places_max']) . ' : 80×85 = 1 place, 80×120 = 2)';
     if ($tr['volume_max'] !== null && $pal['volume'] > $tr['volume_max'] + 1e-9) $exclu[] = 'volume ' . fr($pal['volume']) . ' m³ (max ' . fr((float) $tr['volume_max']) . ' m³)';
     if ($tr['hauteur_max'] !== null && $pal['hauteur'] > $tr['hauteur_max'] + 1e-9) $exclu[] = 'hauteur ' . fr($pal['hauteur']) . ' m (max ' . fr((float) $tr['hauteur_max']) . ' m)';
@@ -476,7 +513,7 @@ function offre(string $t, array $e, array $pal, array $R, array $G, float $gasoi
     $g = $G['grilles'][$t][$e['dep']] ?? null;
     if ($g === null) $exclu[] = "département {$e['dep']} absent de la grille";
     if ($exclu) return ['exclu' => $exclu];
-    $grille = prixGrille($g, $e['poids'], $places);
+    $grille = prixGrille($g, $e['poids'], $places ?? 0);
     if ($grille === null) return ['exclu' => [isset($g['places']) ? "$places places : au-delà de la grille" : 'poids ' . fr($e['poids'], 0) . ' kg : au-delà de la grille']];
 
     [$p, $lib] = $grille;
@@ -644,7 +681,8 @@ const FORMATS_TRANSPORTEUR = [
             ['Exp. ville', 'exp.ville'], ['Exp. pays', 'exp.pays'], ['Exp. téléphone', 'exp.telephone'], ['Exp. contact', 'exp.contact'],
             ['Destinataire', 'dest.nom'], ['Dest. complément', 'dest.complement'], ['Dest. adresse', 'dest.adresse1'], ['Dest. adresse 2', 'dest.adresse2'],
             ['Dest. code postal', 'dest.cp'], ['Dest. ville', 'dest.ville'], ['Dest. pays', 'dest.pays'],
-            ['Nb palettes', 'nb_palettes'], ['Palettes 80x120', 'n120'], ['Palettes 80x85', 'n85'], ['Hauteur (m)', 'hauteur'], ['Volume (m3)', 'volume'],
+            ['Nb palettes', 'nb_palettes'], ['Palettes 80x120', 'n120'], ['Palettes 80x85', 'n85'], ['Palettes 100x100', 'n100x100'],
+            ['Palettes 100x120', 'n100x120'], ['Palettes 100x130', 'n100x130'], ['Palettes 70x240', 'n70x240'], ['Hauteur (m)', 'hauteur'], ['Volume (m3)', 'volume'],
             ['Poids (kg)', 'poids'], ['Rendez-vous', 'rdv'], ['Consignes de livraison', 'consignes'],
         ],
     ],
@@ -658,8 +696,8 @@ function valeurPourTransporteur(string $champ, array $e, array $R, string $t): m
     return match ($champ) {
         'bons' => implode(' / ', $e['bons']),
         'compte' => $R['transporteurs'][$t]['compte'],
-        'nb_palettes' => $e['palettes']['n120'] + $e['palettes']['n85'],
-        'n120', 'n85', 'hauteur', 'volume' => $e['palettes'][$champ],
+        'nb_palettes' => nbPalettes($e['palettes']),
+        'n120', 'n85', 'n100x100', 'n100x120', 'n100x130', 'n70x240', 'hauteur', 'volume' => $e['palettes'][$champ],
         'poids' => round($e['poids'], 1),
         'rdv' => $e['rdv'] ? 'OUI' : 'NON',
         'date', 'date_liv' => $e[$champ] ? ['date' => $e[$champ]] : '',
@@ -722,8 +760,8 @@ function retourFlowOne(string $brut, array $calcul, array $R): string
                 'prix_transport' => $o['total'],
                 'taxe_gasoil' => $o['gasoil'],
                 'poids' => round($e['poids'], 3),
-                'nb_palettes' => $e['palettes']['n120'] + $e['palettes']['n85'],
-                'n120', 'n85' => $e['palettes'][$info],
+                'nb_palettes' => nbPalettes($e['palettes']),
+                'n120', 'n85', 'n100x100', 'n100x120', 'n100x130', 'n70x240' => $e['palettes'][$info],
                 'hauteur' => $e['palettes']['hauteur'],
                 'numero_suivi' => (string) ($e['suivi'] ?? ''),
             };
@@ -762,7 +800,7 @@ function entreeHistorique(array $e): array
     return [
         'num' => $e['num'], 'date' => $e['date'], 'bons' => $e['bons'], 'client' => $e['client'], 'cp' => $e['dest']['cp'], 'dep' => $e['dep'],
         'ville' => $e['dest']['ville'], 'transporteur' => $e['choix'], 'force' => $e['choix'] !== $e['moins_cher'], 'moins_cher' => $e['moins_cher'],
-        'ecart_force' => round($o['total'] - $min, 2), 'n120' => $e['palettes']['n120'], 'n85' => $e['palettes']['n85'],
+        'ecart_force' => round($o['total'] - $min, 2), 'nb_palettes' => nbPalettes($e['palettes']), 'n120' => $e['palettes']['n120'], 'n85' => $e['palettes']['n85'],
         'poids' => round($e['poids'], 3), 'ht' => $e['ht'], 'base' => $o['base'], 'gasoil' => $o['gasoil'], 'taxe' => $o['taxe'], 'total' => $o['total'],
     ];
 }
@@ -772,7 +810,7 @@ function recapitulatif(array $entrees): array
     $vide = ['nb' => 0, 'palettes' => 0, 'poids' => 0.0, 'total' => 0.0, 'ht' => 0.0];
     $ajouter = function (array $a, array $h): array {
         $a['nb']++;
-        $a['palettes'] += $h['n120'] + $h['n85'];
+        $a['palettes'] += $h['nb_palettes'] ?? ($h['n120'] + $h['n85']);
         $a['poids'] += $h['poids'];
         $a['total'] += $h['total'];
         $a['ht'] += $h['ht'];
