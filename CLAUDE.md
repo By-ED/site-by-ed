@@ -82,7 +82,9 @@ sur les sites des transporteurs ; identifiants uniquement dans un `.env` non ver
 **Le dépôt est public** : jamais de grille tarifaire, d'export FLOW ONE, de nom de client ni de montant de frais dans le dépôt
 (tests avec données inventées uniquement). Tout cela vit dans `transport/data/` (non versionné).
 
-- Même principe que le site de QCM : PHP sur O2switch (adresse à choisir), code d'accès, `config.php` non versionné. Aucune dépendance.
+- Même principe que le site de QCM : PHP sur O2switch, code d'accès, `config.php` non versionné. Aucune dépendance.
+  Adresse choisie : https://transport.galan-ga.com (DNS Shopify : A `transport` → 109.234.166.238, racine `/home/reev5185/transport`) ;
+  transport.by-ed.fr écarté pour l'instant (by-ed.fr en maintenance, DNS chez Eolas).
 - `moteur.php` : export FLOW ONE (Windows-1252, « ; », CP complété à 5 chiffres, bons regroupés par ORDEXPNUM), prix, choix, taux,
   fichiers de sortie, historique. `classeur.php` : import du classeur Excel « Aide décision » (xlsx lu sans bibliothèque).
   `api.php` : routes. `index.html` : Départs du jour / Historique / Réglages. `php tests/tester.php` : tests. `construire-zip.sh` → zip O2switch.
@@ -117,4 +119,4 @@ XPO 04, 05, 06, 09, 11, 13, 14, 17, 20, 22, 29, 30, 31, 32, 33, 34, 40, 47, 64, 
 
 En attente du propriétaire : colonnes palettes dans l'export (pour l'instant saisie dans l'outil), sens des DEONUMERIC,
 codes FLOW ONE de BMV et XPO, formats d'import des transporteurs (CSV provisoire en attendant, `FORMATS_TRANSPORTEUR`),
-poids maximum BMV (existe, valeur non donnée), adresse du site.
+poids maximum BMV (existe, valeur non donnée).
