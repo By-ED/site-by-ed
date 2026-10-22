@@ -108,6 +108,8 @@ Classeur Excel (constats) : les prix viennent de « Tarifs à changer chaque ann
 (KUEHNE ≥ 500 kg décalés de plusieurs lignes ; XPO 76 et 79-85 majorés, 75/77/78 majorés deux fois, 90 multiplié par les frais ;
 formule de saison XPO sur d'autres départements avec des dates de 2020) : l'outil ne les reprend pas et les signale à l'import.
 Mentions des libellés : feuille de comparaison → KUEHNE (saison, villes de livraison urbaine) ; « Tarifs » → XPO (saison, région parisienne).
+Saison (1er mai – 31 août), listes confirmées par le propriétaire : KUEHNE 06, 11, 13, 17, 20, 22, 29, 30, 33, 34, 35, 40, 44, 56, 64, 65, 66, 83, 84, 85 ;
+XPO 04, 05, 06, 09, 11, 13, 14, 17, 20, 22, 29, 30, 31, 32, 33, 34, 40, 47, 64, 65, 66, 83, 84.
 
 En attente du propriétaire : colonnes palettes dans l'export (pour l'instant saisie dans l'outil), sens des DEONUMERIC,
 codes FLOW ONE de BMV et XPO, formats d'import des transporteurs (CSV provisoire en attendant, `FORMATS_TRANSPORTEUR`),
