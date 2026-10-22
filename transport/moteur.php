@@ -856,7 +856,7 @@ function recapCsv(array $recap, string $mois): string
 // ---------- Création des expéditions chez les transporteurs (robot) ----------
 
 // Transporteurs dont le robot sait créer les expéditions sur le site (les autres viendront ensuite).
-const ROBOT_TRANSPORTEURS = ['XPO'];
+const ROBOT_TRANSPORTEURS = ['BMV', 'KUEHNE', 'XPO'];
 
 // Ce que le robot saisit sur le site du transporteur pour une expédition attribuée.
 function donneesRobot(array $e): array
