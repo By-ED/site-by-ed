@@ -121,7 +121,7 @@ XPO = Station Chargeur (xpo.station-chargeur.com, éditeur Teliae), cadre « App
 KUEHNE = même logiciel Station Chargeur (kn-overland.station-chargeur.com/kn-overland/, identifiants KN_*) : même formulaire,
 sans unités taxables (champ caché), case #bPrendreRDV. BMV = Besoft Web (besoftweb.groupebmv.com, toujours en https, identifiants BMV_*),
 page POSITION/CREATE : #DATE_CONTRAT (JJ/MM/AAAA), #DropDown_IDPRODUIT = MES (Messagerie, choix de la secrétaire), #REF, #NOM_DES, #AD1/2/3_DES,
-#IDPAYS_DES, #DPT_DES, #CP_DES, #VILLE_DES, #INSTRUCTION_LIV, #LST_OPTION RDV, #NBCOLIS (palettes, à confirmer), #POIDS ; #BtnEnregistrer_pos / #BtnFermer.
+#IDPAYS_DES, #DPT_DES, #CP_DES, #VILLE_DES, #INSTRUCTION_LIV, #LST_OPTION RDV, #NBCOLIS = nombre de palettes (confirmé), #POIDS ; #BtnEnregistrer_pos / #BtnFermer.
 `node robot.js --essai=XPO|KUEHNE|BMV` : connexion + expédition inventée, remplie puis annulée. Service systemd `robot-transport` sur le VPS
 (ubuntu@54.39.110.129, clé SSH ~/.ssh/robot_transport_ed25519 du Mac, connexion par mot de passe désactivée).
 La secrétaire imprime les étiquettes et transmet les pré-annonces elle-même (Encours).
