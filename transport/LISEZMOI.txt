@@ -50,6 +50,7 @@ CHOIX DU TRANSPORTEUR : INSTALLATION SUR O2SWITCH
 BON À SAVOIR
    - Grille, réglages, export en cours et historique sont dans transport/data. Ne supprimez pas ce dossier
      (pensez à le sauvegarder de temps en temps).
+   - Logo : déposez le logo d'Euro Distribution sous le nom logo.png (ou logo.svg, logo.jpg) dans le dossier transport.
    - Pour changer le code d'accès : modifiez code_acces dans config.php.
    - Mise à jour du site : remplacez index.html, api.php, moteur.php et classeur.php,
      sans toucher à config.php ni à data/.

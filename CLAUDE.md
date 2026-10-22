@@ -87,6 +87,8 @@ sur les sites des transporteurs ; identifiants uniquement dans un `.env` non ver
   fichiers de sortie, historique. `classeur.php` : import du classeur Excel « Aide décision » (xlsx lu sans bibliothèque).
   `api.php` : routes. `index.html` : Départs du jour / Historique / Réglages. `php tests/tester.php` : tests. `construire-zip.sh` → zip O2switch.
 - Données : `data/reglages.json`, `grilles.json`, `lot.json` (export en cours + saisies), `colonnes.json`, `historique/AAAA-MM.json`.
+- Page aux couleurs d'Euro Distribution (site by-ed.fr, inaccessible depuis l'environnement de travail) : couleurs dans `--marque*` en tête du CSS
+  de `index.html`, logo = `logo.svg|png|jpg` déposé à côté (non versionné tant qu'il n'est pas fourni). Couleurs actuelles provisoires.
 
 Règles (validées par le propriétaire) :
 - Contraintes : BMV 3 palettes, 4 m³, 2,00 m ; KUEHNE 3 palettes, 2,10 m ; XPO 12 places (80×85 = 1 place, 80×120 = 2), 2,20 m.
