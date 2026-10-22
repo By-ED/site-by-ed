@@ -5,26 +5,29 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Euro Distribution · Choix du transporteur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Questrial&display=swap">
 <style>
 /* Outil de bureau : un grand tableau des départs du jour ; les moyennes restent visibles en haut. */
 :root{
-  /* Couleurs Euro Distribution : à remplacer par celles du logo (un seul endroit). */
-  --marque:#1d3f6e; --marque-texte:#ffffff; --marque-douce:#e3ebf5;
-  --bg:#f1f3f5; --surface:#ffffff; --sunk:#e6eaee; --ink:#15202b; --muted:#566573; --line:#cdd5dd;
-  --accent:#1d5c96; --accent-soft:#dce8f4; --on-accent:#ffffff;
+  /* Couleurs Euro Distribution, reprises de by-ed.fr : noir, crème, orange. */
+  --marque:#020202; --marque-texte:#f4f2ea; --marque-douce:#fbeee6;
+  --bg:#f4f2ea; --surface:#ffffff; --sunk:#e6eaee; --ink:#15202b; --muted:#566573; --line:#cdd5dd;
+  --accent:#cf4716; --accent-soft:#fbe3d8; --on-accent:#ffffff;
   --ok:#17783a; --ok-soft:#dcefe2; --bad:#b0281d; --bad-soft:#f8dedb; --warn:#8a5300; --warn-soft:#f7e8cd;
-  --f-body:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --f-body:Questrial,"Helvetica Neue",Arial,sans-serif; --f-titre:Archivo,"Helvetica Neue",Arial,sans-serif;
   --f-mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;
   --r:8px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0f1418; --surface:#171e24; --sunk:#1f2830; --ink:#e3e9ee; --muted:#9aa8b4; --line:#2e3a44;
-  --accent:#6aa9e0; --accent-soft:#1b3044; --on-accent:#08192a; --marque-douce:#1a2a3d;
+  --accent:#e5683a; --accent-soft:#3a1d12; --on-accent:#ffffff; --marque-douce:#1a2a3d;
   --ok:#6dd08f; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#3d1c1a; --warn:#efb45c; --warn-soft:#382911;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1418; --surface:#171e24; --sunk:#1f2830; --ink:#e3e9ee; --muted:#9aa8b4; --line:#2e3a44;
-  --accent:#6aa9e0; --accent-soft:#1b3044; --on-accent:#08192a; --marque-douce:#1a2a3d;
+  --accent:#e5683a; --accent-soft:#3a1d12; --on-accent:#ffffff; --marque-douce:#1a2a3d;
   --ok:#6dd08f; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#3d1c1a; --warn:#efb45c; --warn-soft:#382911;
   color-scheme:dark}
 *{box-sizing:border-box}
@@ -41,7 +44,7 @@ button{font:inherit;color:inherit}
 /* en-tête */
 .tete{position:sticky;top:0;z-index:5;background:var(--bg);padding-bottom:10px;display:grid;gap:10px}
 .tete-l1{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;justify-content:space-between;background:var(--marque);color:var(--marque-texte);padding:10px 16px;border-radius:0 0 10px 10px}
-.marque{display:flex;align-items:center;gap:12px;font-weight:800;font-size:19px;letter-spacing:-.01em}
+.marque{display:flex;align-items:center;gap:12px;font-family:var(--f-titre);font-weight:800;font-size:19px;letter-spacing:-.01em}
 .marque img{height:38px;width:auto;background:#fff;border-radius:6px;padding:3px}
 .marque small{display:block;font-weight:500;font-size:13px;opacity:.85}
 .onglets{display:flex;gap:4px;flex-wrap:wrap}
@@ -50,8 +53,8 @@ button{font:inherit;color:inherit}
 .etapes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .etapes li{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border-radius:20px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:600}
 .etapes b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--sunk);color:var(--muted)}
-.etapes li.encours{border-color:var(--marque);color:var(--ink)}
-.etapes li.encours b{background:var(--marque);color:var(--marque-texte)}
+.etapes li.encours{border-color:var(--accent);color:var(--ink)}
+.etapes li.encours b{background:var(--accent);color:#fff}
 .etapes li.fait b{background:var(--ok);color:#fff}
 .bandeau{display:flex;flex-wrap:wrap;gap:8px}
 .indic{display:flex;align-items:baseline;gap:8px;padding:6px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--line)}
@@ -95,8 +98,8 @@ tr.detail > td{background:var(--sunk);padding:12px}
 .exp-num{font-weight:800;font-family:var(--f-mono)}
 .exp-client{font-weight:700;max-width:280px}
 .exp-lieu{color:var(--muted);font-size:14px}
-td.retenu{background:var(--marque-douce);border-left:4px solid var(--marque);min-width:220px}
-.retenu-nom{font-size:22px;font-weight:800;letter-spacing:.02em;color:var(--marque);line-height:1.1}
+td.retenu{background:var(--marque-douce);border-left:4px solid var(--accent);min-width:220px}
+.retenu-nom{font-family:var(--f-titre);font-size:22px;font-weight:800;letter-spacing:.02em;color:var(--accent);line-height:1.1}
 .retenu-prix{font-family:var(--f-mono);font-size:19px;font-weight:700;margin-top:2px}
 .retenu .petit{margin-top:3px}
 .retenu select{margin-top:6px;font-size:13px}
