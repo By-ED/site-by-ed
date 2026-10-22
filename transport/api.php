@@ -120,6 +120,8 @@ function etat(): array
         'mois_courant' => ['mois' => $mois, 'libelle' => nomMois($mois), 'taux' => $recap['total']['taux'], 'nb' => $recap['total']['nb'], 'max' => (float) $R['taux']['moyenne_max']],
         'grille' => $g ? ['fichier' => $g['fichier'], 'importe_le' => $g['importe_le']] : null,
         'gasoil_mois' => array_map(fn ($t) => nombre($R['gasoil'][$mois][$t] ?? null), array_combine(TRANSPORTEURS, TRANSPORTEURS)),
+        // Logo d'Euro Distribution déposé à côté de index.html (facultatif).
+        'logo' => array_values(array_filter(['logo.svg', 'logo.png', 'logo.jpg'], fn ($f) => is_file(__DIR__ . "/$f")))[0] ?? null,
     ];
 }
 
