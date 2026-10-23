@@ -128,6 +128,7 @@ async function creerStation(page, x, nom) {
   await page.screenshot({ path: capture, fullPage: true });
 
   if (MODE !== 'reel') {
+    if (ENV.VISIBLE === 'oui') await page.waitForTimeout(6000); // démonstration : le temps de regarder le formulaire rempli
     await f.locator('input[type=reset]').first().click();
     return { statut: 'erreur', message: `répétition : formulaire rempli puis annulé (capture ${path.basename(capture)})` };
   }
@@ -202,6 +203,7 @@ async function creerBmv(page, x) {
   await page.screenshot({ path: capture, fullPage: true });
 
   if (MODE !== 'reel') {
+    if (ENV.VISIBLE === 'oui') await page.waitForTimeout(6000); // démonstration : le temps de regarder le formulaire rempli
     page.once('dialog', (d) => d.accept().catch(() => {}));
     await page.locator('#BtnFermer').click();
     return { statut: 'erreur', message: `répétition : formulaire rempli puis fermé sans enregistrer (capture ${path.basename(capture)})` };
@@ -253,7 +255,7 @@ async function traiter(navigateur, nom, liste) {
 async function passage() {
   const { expeditions } = await site('robot_a_faire');
   if (!expeditions.length) return;
-  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui' });
+  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui', slowMo: Number(ENV.RALENTI || 0) });
   try {
     for (const x of expeditions.filter((e) => !TRANSPORTEURS[e.transporteur])) {
       await site('robot_resultat', { num: x.num, statut: 'erreur', message: `robot : ${x.transporteur} pas encore pris en charge` });
@@ -272,7 +274,7 @@ async function essai(nom) {
   if (MODE === 'reel') throw new Error('essai refusé : repasser MODE=repetition dans .env');
   const t = TRANSPORTEURS[nom];
   if (!t) throw new Error(`transporteur inconnu : ${nom}`);
-  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui' });
+  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui', slowMo: Number(ENV.RALENTI || 0) });
   try {
     const page = await nouvellePage(navigateur);
     await t.connexion(page);
