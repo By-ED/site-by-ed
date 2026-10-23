@@ -399,7 +399,8 @@ function consigneLot(int $niveau, array $items, array $autresAngles): string
     $autres = $autresAngles ? "\n\nAutres questions du même QCM, rédigées à part (n'en reprends pas les angles ni les propositions) :\n- " . implode("\n- ", $autresAngles) : '';
     return "Rédige les questions ci-dessous.\n\n"
         . "Règles impératives :\n"
-        . "- Chaque question a un énoncé et EXACTEMENT 5 propositions. L'énoncé demande toujours de cocher la ou les propositions EXACTES.\n"
+        . "- Chaque question a un énoncé et EXACTEMENT 5 propositions. L'énoncé demande toujours de cocher la ou les propositions EXACTES, avec la même formule pour une QRU et pour un QCM.\n"
+        . "- L'énoncé n'indique JAMAIS combien de propositions sont vraies : pas de « (2 réponses exactes) », « une seule réponse », « plusieurs réponses possibles » ni de nombre. C'est à l'étudiante de le trouver.\n"
         . "- Respecte EXACTEMENT le type et le nombre de propositions vraies demandés pour chaque question (QRU = une seule vraie ; QCM = le nombre indiqué). L'ordre des propositions sera mélangé ensuite.\n"
         . ($niveau === MIX
             ? "- Ces questions forment la rubrique « Mix » : chacune a son propre niveau, indiqué entre parenthèses.\n  " . implode("\n  ", NIVEAU_DESC) . "\n"
@@ -494,10 +495,25 @@ function construireLots(array $plan, int $serie = 1): array
     return $lots;
 }
 
+// L'énoncé ne doit pas dire combien de propositions sont vraies (demande de l'étudiante).
+// Retire ces indications, y compris dans les questions créées avant cette règle.
+function nettoyerEnonce(string $e): string
+{
+    $nombre = '(?:\d|une?|deux|trois|quatre|cinq|plusieurs|toutes)';
+    $mot = '(?:réponses?|propositions?|items?)';
+    $qualif = '(?:exactes?|vraies?|justes?|correctes?|possibles?|attendues?|unique)';
+    // « (2 réponses exactes) », « (une seule réponse) », « (plusieurs réponses possibles) »…
+    $e = preg_replace("/\s*\((?=[^()]*(?:\b$nombre\s+(?:seule\s+)?(?:bonnes?\s+)?$mot\b|\b$mot\s+$qualif\b))[^()]*\)/iu", '', $e);
+    // « les 2 propositions exactes » → « les propositions exactes » ; « la seule réponse » → « la réponse »
+    $e = preg_replace('/\bles\s+(?:\d|deux|trois|quatre|cinq)\s+((?:bonnes\s+)?(?:propositions|réponses))/iu', 'les $1', $e);
+    $e = preg_replace('/\b(la|une)\s+seule\s+((?:bonne\s+)?(?:proposition|réponse))/iu', '$1 $2', $e);
+    return trim($e);
+}
+
 function normaliserQuestion(mixed $r, int $niveau, int $serie): ?array
 {
     if (!is_array($r)) return null;
-    $enonce = mb_substr(trim((string) ($r['enonce'] ?? '')), 0, 700);
+    $enonce = nettoyerEnonce(mb_substr(trim((string) ($r['enonce'] ?? '')), 0, 700));
     $brutes = is_array($r['propositions'] ?? null) ? array_values($r['propositions']) : [];
     if ($enonce === '' || count($brutes) < 5) return null;
     $props = [];
@@ -561,7 +577,8 @@ switch ($action) {
 
     case 'questions':
         $id = idValide($_GET['id'] ?? null);
-        repondre(200, ['questions' => lireJson(cheminQuestions($id), ['questions' => []])['questions'],
+        $qs = array_map(fn ($q) => ['enonce' => nettoyerEnonce((string) ($q['enonce'] ?? ''))] + $q, lireJson(cheminQuestions($id), ['questions' => []])['questions']);
+        repondre(200, ['questions' => $qs,
             'cartes' => lireJson(cheminCartes($id), ['cartes' => []])['cartes']]);
 
     case 'cours_creer':

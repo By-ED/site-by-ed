@@ -51,6 +51,8 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Les questions couvrent TOUT le cours (révisions espacées J7, J14, J28 sans rouvrir le cours).
 - Contenu : uniquement le cours fourni. Les chiffres et valeurs précises sont interrogés.
 - Pièges : inversions, chiffres modifiés, notions proches. Pas de pièges à base de « toujours / jamais ».
+- L'énoncé n'indique jamais le nombre de réponses exactes (« 2 réponses exactes »…) : interdit dans la consigne,
+  et `nettoyerEnonce()` le retire des questions stockées (à la création et à la lecture).
 - Anecdotes du professeur : ignorées, aucune question dessus (choix de l'étudiante).
 - Une même phrase du cours n'est jamais découpée en plusieurs propositions ; une notion ne revient que sous un angle nouveau.
 - Correction de chaque proposition (vraie ou fausse, avec la formulation correcte) + « À retenir ».
