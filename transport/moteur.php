@@ -408,7 +408,7 @@ function construireExpeditions(array $export, array $saisies, array $R): array
         [$srcPoids, $poidsPese] = $choisir('poids_pese');
         [$srcH, $h] = $choisir('hauteur');
         [, $vol] = $choisir('volume');
-        $e['saisie'] = ['poids_pese' => $poidsPese, 'hauteur' => hauteurM($h), 'rdv' => $s['rdv'] ?? null, 'force' => $s['force'] ?? null,
+        $e['saisie'] = ['poids_pese' => $poidsPese, 'hauteur' => hauteurM($h), 'rdv' => $s['rdv'] ?? null, 'hayon' => $s['hayon'] ?? null, 'force' => $s['force'] ?? null,
             'sources' => ['poids_pese' => $srcPoids, 'hauteur' => $srcH]];
         foreach (PALETTES as $k => $_) {
             [$src, $n] = $choisir($k);
@@ -418,6 +418,9 @@ function construireExpeditions(array $export, array $saisies, array $R): array
         $e['poids'] = $poidsPese !== null && $poidsPese > 0 ? $poidsPese : $e['poids_export'];
         $e['rdv_auto'] = (bool) preg_match('/\bRDV\b|RENDEZ[\s-]*VOUS/i', $e['consignes']);
         $e['rdv'] = is_bool($e['saisie']['rdv']) ? $e['saisie']['rdv'] : $e['rdv_auto'];
+        // Hayon : simple information pour le transporteur (pas de frais), cochée d'office si les consignes le demandent.
+        $e['hayon_auto'] = (bool) preg_match('/\bHAYON\b/i', $e['consignes']);
+        $e['hayon'] = is_bool($e['saisie']['hayon']) ? $e['saisie']['hayon'] : $e['hayon_auto'];
 
         $pal = array_map(fn ($k) => $e['saisie'][$k] ?? 0, array_combine(array_keys(PALETTES), array_keys(PALETTES)));
         if (nbPalettes($pal) > 0 && $e['saisie']['hauteur'] !== null) {
@@ -568,8 +571,20 @@ function zoneDe(string $dep, array $R): ?string
 // ---------- Calcul complet d'un lot importé ----------
 
 // $historique : expéditions déjà enregistrées pour les mois concernés (pour la moyenne du jour et du mois).
-function calculerLot(array $export, array $saisies, array $R, ?array $G, array $historique): array
+// Dernier taux gasoil saisi pour un transporteur avant un mois donné : ['mois' => 'AAAA-MM', 'taux' => x] ou null.
+function dernierGasoil(array $gasoil, string $transporteur, string $avant): ?array
 {
+    $mois = array_filter(array_keys($gasoil), fn ($m) => $m < $avant && nombre($gasoil[$m][$transporteur] ?? null) !== null);
+    if (!$mois) return null;
+    $m = max($mois);
+    return ['mois' => $m, 'taux' => nombre($gasoil[$m][$transporteur])];
+}
+
+// $moisActuel (AAAA-MM, par défaut le mois en cours) : un départ dans un mois à venir dont le taux gasoil n'est pas encore
+// publié prend le dernier taux connu, signalé provisoire ; un mois en cours ou passé sans taux bloque toujours le calcul.
+function calculerLot(array $export, array $saisies, array $R, ?array $G, array $historique, ?string $moisActuel = null): array
+{
+    $moisActuel ??= date('Y-m');
     $exps = construireExpeditions($export, $saisies, $R);
     $blocages = [];
     $avert = [];
@@ -579,12 +594,17 @@ function calculerLot(array $export, array $saisies, array $R, ?array $G, array $
     $mois = array_values(array_unique(array_filter(array_map(fn ($e) => $e['date'] ? substr($e['date'], 0, 7) : null, $exps))));
     sort($mois);
     $gasoils = [];
+    $provisoires = [];
     foreach ($mois as $m) {
         $manque = [];
         foreach (TRANSPORTEURS as $t) {
             $x = nombre($R['gasoil'][$m][$t] ?? null);
-            if ($x === null) $manque[] = $t;
-            else $gasoils[$m][$t] = $x;
+            $connu = $x === null && $m > $moisActuel ? dernierGasoil($R['gasoil'], $t, $m) : null;
+            if ($x !== null) $gasoils[$m][$t] = $x;
+            elseif ($connu) {
+                $gasoils[$m][$t] = $connu['taux'];
+                $provisoires[$m][$t] = nomMois($connu['mois']);
+            } else $manque[] = $t;
         }
         if ($manque) $blocages[] = 'Taux gasoil de ' . nomMois($m) . ' non saisi pour ' . implode(', ', $manque) . ' : calcul bloqué (Réglages › Taxe gasoil).';
     }
@@ -594,8 +614,11 @@ function calculerLot(array $export, array $saisies, array $R, ?array $G, array $
         $e['choix'] = null;
         $e['moins_cher'] = null;
         if ($blocages || $e['erreurs']) continue;
-        $g = $gasoils[substr($e['date'], 0, 7)];
-        foreach (TRANSPORTEURS as $t) $e['offres'][$t] = offre($t, $e, $e['palettes'], $R, $G, $g[$t]);
+        $m = substr($e['date'], 0, 7);
+        foreach (TRANSPORTEURS as $t) {
+            $e['offres'][$t] = offre($t, $e, $e['palettes'], $R, $G, $gasoils[$m][$t]);
+            if (isset($provisoires[$m][$t])) $e['offres'][$t]['gasoil_provisoire'] = $provisoires[$m][$t];
+        }
         $valides = array_filter($e['offres'], fn ($o) => isset($o['total']));
         if (!$valides) {
             $e['erreurs'][] = 'Aucun transporteur ne convient';
@@ -683,7 +706,7 @@ const FORMATS_TRANSPORTEUR = [
             ['Dest. code postal', 'dest.cp'], ['Dest. ville', 'dest.ville'], ['Dest. pays', 'dest.pays'],
             ['Nb palettes', 'nb_palettes'], ['Palettes 80x120', 'n120'], ['Palettes 80x85', 'n85'], ['Palettes 100x100', 'n100x100'],
             ['Palettes 100x120', 'n100x120'], ['Palettes 100x130', 'n100x130'], ['Palettes 70x240', 'n70x240'], ['Hauteur (m)', 'hauteur'], ['Volume (m3)', 'volume'],
-            ['Poids (kg)', 'poids'], ['Rendez-vous', 'rdv'], ['Consignes de livraison', 'consignes'],
+            ['Poids (kg)', 'poids'], ['Rendez-vous', 'rdv'], ['Hayon', 'hayon'], ['Consignes de livraison', 'consignes'],
         ],
     ],
 ];
@@ -700,6 +723,7 @@ function valeurPourTransporteur(string $champ, array $e, array $R, string $t): m
         'n120', 'n85', 'n100x100', 'n100x120', 'n100x130', 'n70x240', 'hauteur', 'volume' => $e['palettes'][$champ],
         'poids' => round($e['poids'], 1),
         'rdv' => $e['rdv'] ? 'OUI' : 'NON',
+        'hayon' => $e['hayon'] ? 'OUI' : 'NON',
         'date', 'date_liv' => $e[$champ] ? ['date' => $e[$champ]] : '',
         default => $e[$champ] ?? '',
     };
@@ -868,6 +892,6 @@ function donneesRobot(array $e): array
         'palettes' => nbPalettes($e['palettes']), 'places' => placesXpo($e['palettes']),
         'detail_palettes' => array_filter(array_intersect_key($e['palettes'], PALETTES)),
         'hauteur' => $e['palettes']['hauteur'], 'poids' => (int) ceil($e['poids']),
-        'consignes' => trim((string) preg_replace('/\s+/', ' ', $e['consignes'])), 'rdv' => $e['rdv'],
+        'consignes' => trim((string) preg_replace('/\s+/', ' ', $e['consignes'])), 'rdv' => $e['rdv'], 'hayon' => $e['hayon'],
     ];
 }

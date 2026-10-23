@@ -99,13 +99,16 @@ Règles (validées par le propriétaire) :
   Transporteur exclu s'il dépasse ; aucun possible ou palettes manquantes → ligne rouge, rien d'attribué.
 - Prix de base = grille × révision × saison × majoration du département + frais (fixes, livraison urbaine, rendez-vous, accès difficile).
   Prix du transport = base × (1 + taxe gasoil) ; la taxe s'applique sur tout. Taux gasoil par mois et par transporteur :
-  absent pour le mois d'expédition → calcul bloqué. Choix sur le prix du transport ; la secrétaire peut forcer un autre transporteur valide.
+  absent pour le mois d'expédition → calcul bloqué, sauf pour un mois à venir (départ préparé à l'avance en haute saison) :
+  dernier taux connu, signalé « gasoil provisoire » (choix du propriétaire). Chaque expédition garde sa propre date (ORDEXPEDATE). Choix sur le prix du transport ; la secrétaire peut forcer un autre transporteur valide.
 - Grilles au poids (BMV, KUEHNE) : forfaits jusqu'à 100 kg, puis prix aux 100 kg sur le poids arrondi aux 10 kg supérieurs.
   BMV : le prix au kilo continue au-delà de 200 kg ; coefficient « MAJ 01.01 » (révision) appliqué.
   XPO : prix au nombre de places seulement, le poids ne compte pas (confirmé par le propriétaire).
   XPO région parisienne : majoration appliquée une seule fois sur les 8 départements « + taxe Paris et RP », Paris compris (confirmé).
 - Taux = prix du transport / ORDHTBASETOTAL. Moyenne pondérée du jour et du mois ; alerte au-dessus de 3,5 %.
   Repère par expédition 3,5 %, 5 % en Bretagne, Sud-Ouest, Sud-Est (listes modifiables).
+- Rendez-vous et hayon : choix Oui / Non par expédition (cochés d'office si les consignes disent RDV / HAYON).
+  Le rendez-vous ajoute ses frais ; le hayon est une simple information (pas de frais), écrite dans les CSV et transmise au robot.
 - Pas de suggestion de répartition des palettes : le propriétaire veut seulement le bon transporteur au meilleur prix
   (« pistes d'économie » retirées à sa demande).
 - Retour FLOW ONE : l'export d'origine octet pour octet ; seuls DEOCARRIER, CARRIERDESIGNATION et les colonnes de la table

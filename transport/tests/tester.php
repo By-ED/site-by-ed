@@ -199,6 +199,16 @@ unset($R2['gasoil']['2026-10']['XPO']);
 $c3 = calculerLot($export, $saisies, $R2, $G, []);
 verifier(str_contains($c3['blocages'][0] ?? '', 'octobre 2026 non saisi pour XPO'), 'gasoil manquant : blocage');
 egal(array_filter(array_column($c3['expeditions'], 'choix')), [], 'gasoil manquant : aucun choix');
+
+// Départ dans un mois à venir sans taux gasoil : dernier taux connu, signalé provisoire (choix du propriétaire).
+$exportDec = lireExport(str_replace('01/10/2026', '04/12/2026', $brut)); // date d'expédition seulement (la livraison est au 02/10)
+$c5 = calculerLot($exportDec, $saisies, $R, $G, [], '2026-10');
+egal($c5['blocages'], [], 'mois à venir sans gasoil : pas de blocage');
+$e5 = array_column($c5['expeditions'], null, 'num')['1001'];
+egal($e5['offres']['KUEHNE']['gasoil_provisoire'] ?? null, 'octobre 2026', 'mois à venir : taux d\'octobre signalé provisoire');
+egal($e5['offres']['KUEHNE']['total'], $par['1001']['offres']['KUEHNE']['total'], 'mois à venir : même prix qu\'avec le taux d\'octobre');
+$c6 = calculerLot($exportDec, $saisies, $R, $G, [], '2026-12');
+verifier(str_contains($c6['blocages'][0] ?? '', 'décembre 2026 non saisi'), 'mois en cours sans gasoil : toujours bloqué');
 $R3 = $R;
 $R3['transporteurs']['KUEHNE']['rdv'] = null;
 verifier(in_array('Réglage à compléter : KUEHNE : frais de rendez-vous.', calculerLot($export, $saisies, $R3, $G, [])['blocages'], true), 'réglage vide : blocage');
@@ -243,6 +253,17 @@ egal($x['Bons de commande'], '1004 / 1003', 'fichier transporteur : bons groupé
 egal($x['Poids (kg)'], '70', 'fichier transporteur : poids');
 egal($x['Hauteur (m)'], '1', 'fichier transporteur : hauteur');
 egal($x['Date expédition'], '01/10/2026', 'fichier transporteur : date');
+egal($x['Hayon'], 'NON', 'fichier transporteur : hayon NON par défaut');
+
+// Hayon : information transmise (fichier, robot), sans effet sur le prix (choix du propriétaire).
+$cH = calculerLot($export, ['1003' => ['hayon' => true] + $saisies['1003']] + $saisies, $R, $G, []);
+$eH = array_column($cH['expeditions'], null, 'num')['1003'];
+verifier($eH['hayon'] === true, 'hayon coché');
+egal($eH['total'], $par['1003']['total'], 'hayon : prix inchangé');
+egal(donneesRobot($eH)['hayon'], true, 'hayon transmis au robot');
+$xH = array_combine($lignes[0], str_getcsv(explode("\r\n", trim(mb_convert_encoding(fichierTransporteur('XPO', $cH, $R), 'UTF-8', 'Windows-1252')))[1], ';', '"', ''));
+egal($xH['Hayon'], 'OUI', 'fichier transporteur : hayon OUI');
+verifier($par['1001']['hayon'] === false, 'hayon non coché par défaut');
 
 $h = array_map('entreeHistorique', array_values(array_filter($c['expeditions'], fn ($e) => $e['choix'])));
 $r = recapitulatif($h);

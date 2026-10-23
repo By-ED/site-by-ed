@@ -90,8 +90,11 @@ async function creerStation(page, x, nom) {
   const remplir = async (sel, val) => { const c = f.locator(sel); await c.fill(''); if (val !== '') await c.fill(String(val)); };
   const caseRdv = f.locator('#bPrendreRDV');
   const aCaseRdv = (await caseRdv.count()) > 0;
+  const caseHayon = f.locator('#bHayon');
+  const aCaseHayon = await caseHayon.isVisible().catch(() => false);
   // Consignes : 70 caractères en « Instructions », la suite en « Remarques ».
-  const consignes = (x.consignes + (x.rdv && !aCaseRdv && !/RDV|RENDEZ/i.test(x.consignes) ? ' PRENDRE RDV' : '')).trim();
+  const consignes = (x.consignes + (x.rdv && !aCaseRdv && !/RDV|RENDEZ/i.test(x.consignes) ? ' PRENDRE RDV' : '')
+    + (x.hayon && !aCaseHayon && !/HAYON/i.test(x.consignes) ? ' HAYON' : '')).trim();
   await remplir('#DateExpe', dateXpo(x.date));
   await remplir('#Nom', coupe(x.dest.nom, 35));
   await remplir('#Adresse1', coupe(x.dest.adresse1, 35));
@@ -107,6 +110,7 @@ async function creerStation(page, x, nom) {
   await remplir('#Instructions', coupe(consignes, 70));
   await remplir('#Remarques', coupe(consignes.slice(70), 70));
   if (aCaseRdv && x.rdv) await caseRdv.check();
+  if (aCaseHayon && x.hayon) await caseHayon.check();
   // La saisie ouvre la liste du carnet d'adresses XPO, qui reste par-dessus le bouton Valider : on la masque.
   await f.locator('#Nom').press('Escape');
   await f.evaluate(() => {
@@ -163,7 +167,8 @@ async function creerBmv(page, x) {
   await page.goto(`${BMV_URL}/POSITION/CREATE`, { waitUntil: 'domcontentloaded' });
   await page.locator('#NOM_DES').waitFor({ timeout: 15000 });
   const remplir = async (sel, val) => { const c = page.locator(sel); await c.fill(''); if (val !== '') await c.fill(String(val)); };
-  const consignes = x.consignes.trim();
+  // Besoft Web n'a pas de case hayon : la mention part dans les instructions.
+  const consignes = (x.consignes + (x.hayon && !/HAYON/i.test(x.consignes) ? ' HAYON' : '')).trim();
 
   await remplir('#DATE_CONTRAT', dateBmv(x.date));
   await page.locator('#DropDown_IDPRODUIT').selectOption('MES');
@@ -178,7 +183,17 @@ async function creerBmv(page, x) {
   await remplir('#VILLE_DES', coupe(x.dest.ville, 35));
   await page.locator('#VILLE_DES').press('Escape');
   await remplir('#INSTRUCTION_LIV', consignes);
-  if (x.rdv) await page.locator('#LST_OPTION').selectOption('RDV');
+  // « Option » est une liste à choix multiples Kendo (le <select> d'origine est caché) : on passe par son API.
+  if (x.rdv) {
+    const ok = await page.evaluate(() => {
+      const ms = window.jQuery && window.jQuery('#LST_OPTION').data('kendoMultiSelect');
+      if (!ms) return false;
+      ms.value([...new Set([...ms.value(), 'RDV'])]);
+      ms.trigger('change');
+      return ms.value().includes('RDV');
+    });
+    if (!ok) throw new Error('BMV : option « RDV » impossible à cocher');
+  }
   await remplir('#NBCOLIS', x.palettes);
   await remplir('#POIDS', x.poids);
   await page.locator('#POIDS').press('Tab');
@@ -265,7 +280,7 @@ async function essai(nom) {
     const res = await t.creer(page, {
       num: 'ESSAI-ROBOT', transporteur: nom, date: new Date().toLocaleDateString('sv-SE'),
       dest: { nom: 'ESSAI NE PAS LIVRER', complement: '', adresse1: '1 RUE DE L ESSAI', adresse2: '', cp: '71800', ville: 'LA CLAYETTE', pays: 'FR' },
-      palettes: 1, places: 2, poids: 100, consignes: 'ESSAI ROBOT', rdv: false,
+      palettes: 1, places: 2, poids: 100, consignes: 'ESSAI ROBOT', rdv: true, hayon: true,
     });
     journal('essai :', res.message);
   } finally {

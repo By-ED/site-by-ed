@@ -123,6 +123,14 @@ input[type=text].mini.saisi{border-color:var(--accent);background:var(--accent-s
 .pal{display:grid;grid-template-columns:auto auto;gap:4px 6px;align-items:center;font-size:12px;color:var(--muted)}
 .pal3{display:grid;grid-template-columns:repeat(3,58px);gap:2px 6px;font-size:11px;color:var(--muted);white-space:nowrap}
 .case{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:4px;cursor:pointer}
+.options{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:6px;font-size:12px}
+.oui-non{display:inline-flex;align-items:center;gap:0;font-weight:600}
+.oui-non > span{margin-right:6px}
+.oui-non .on{font:inherit;font-size:12px;padding:2px 10px;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.oui-non .on:first-of-type{border-radius:5px 0 0 5px}
+.oui-non .on:last-of-type{border-radius:0 5px 5px 0;border-left:0}
+.oui-non .on.actif{background:var(--marque);border-color:var(--marque);color:var(--marque-texte)}
+.oui-non .on:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .case input{accent-color:var(--accent)}
 td.offre{min-width:118px;border-left:1px solid var(--line)}
 td.offre .prix{font-family:var(--f-mono);font-size:15px;display:block}
@@ -465,6 +473,7 @@ function ligneExpedition(e, lot){
     retenu = [
       h("div", {class:"retenu-nom"}, e.choix),
       h("div", {class:"retenu-prix"}, eur(o.total)),
+      o.gasoil_provisoire ? h("div", {class:"petit force-txt"}, "Gasoil provisoire (taux de " + o.gasoil_provisoire + ")") : null,
       e.choix === e.moins_cher ? h("div", {class:"petit ok-txt"}, "✓ le moins cher")
         : h("div", {class:"petit force-txt"}, "Imposé : " + e.moins_cher + " coûtait " + eur(e.total - e.offres[e.moins_cher].total) + " de moins"),
       h("div", {class:"petit"}, "Taux ", h("span", {class:"taux" + (e.au_dessus ? " haut" : "")}, pct(e.taux)), e.au_dessus ? h("span", {class:"muted"}, " (repère " + nb(e.seuil, 1) + " %)") : null),
@@ -485,21 +494,31 @@ function ligneExpedition(e, lot){
       h("div", {}, h("span", {class:"exp-num"}, e.num), e.bons.length > 1 ? h("span", {class:"puce", style:"margin-left:6px"}, pluriel(e.bons.length, "bon", "bons")) : null),
       h("div", {class:"exp-client"}, e.client),
       h("div", {class:"exp-lieu"}, (e.dest.cp || "") + " " + e.dest.ville),
-      h("div", {class:"exp-lieu"}, "Commande " + eur(e.ht) + " HT")),
+      h("div", {class:"exp-lieu"}, "Commande " + eur(e.ht) + " HT"),
+      e.date && e.date !== new Date().toLocaleDateString("sv-SE") ? h("div", {class:"puce", style:"margin-top:4px;display:inline-block"}, "Départ le " + dateFr(e.date)) : null),
     h("td", {},
       // Nombre de palettes par format, puis hauteur et poids pesé : une étiquette au-dessus de chaque case.
       h("div", {class:"saisie4"},
         FORMATS.map(([k, lib]) => h("label", {}, lib, champ(k, s[k], "Palettes " + lib, s.sources[k]))),
         h("label", {}, "Haut. (m)", champ("hauteur", s.hauteur, "Hauteur (m)", s.sources.hauteur)),
         h("label", {}, "Poids (kg)", champ("poids_pese", s.poids_pese, "Poids pesé (kg)", s.sources.poids_pese, nb(e.poids_export, 0)))),
-      h("label", {class:"case", title:e.rdv_auto ? "Rendez-vous détecté dans les consignes" : null},
-        h("input", {type:"checkbox", checked:e.rdv, onchange:ev => saisir(e.num, {rdv:ev.target.checked})}), "rendez-vous" + (e.rdv_auto ? " (consignes)" : ""),
-        e.palettes ? h("span", {style:"margin-left:auto"}, nb(e.palettes.volume, 2) + " m³") : null)),
+      h("div", {class:"options"},
+        ouiNon(e, "rdv", "Rendez-vous", e.rdv_auto),
+        ouiNon(e, "hayon", "Hayon", e.hayon_auto),
+        e.palettes ? h("span", {class:"muted", style:"margin-left:auto"}, nb(e.palettes.volume, 2) + " m³") : null)),
     h("td", {class:"retenu"}, retenu),
     h("td", {}, compar),
     h("td", {}, h("button", {type:"button", class:"bascule", "aria-expanded":String(ouvert), title:"Détail des prix", onclick:() => { S.ouverts[e.num] = !ouvert; render(); }}, ouvert ? "▾ détail" : "▸ détail")));
   if (!ouvert) return ligne;
   return [ligne, h("tr", {class:"detail"}, h("td", {colspan:5}, detailExpedition(e)))];
+}
+
+// Choix Oui / Non (rendez-vous, hayon) ; « auto » = repéré dans les consignes de livraison.
+function ouiNon(e, k, libelle, auto){
+  const bouton = (val, txt) => h("button", {type:"button", class:"on" + (e[k] === val ? " actif" : ""), "aria-pressed":String(e[k] === val),
+    onclick:() => { if (e[k] !== val) saisir(e.num, {[k]:val}); }}, txt);
+  return h("div", {class:"oui-non", title:auto ? libelle + " demandé dans les consignes" : null},
+    h("span", {}, libelle + (auto ? " *" : "")), bouton(true, "Oui"), bouton(false, "Non"));
 }
 
 function detailExpedition(e){
