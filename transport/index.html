@@ -107,6 +107,7 @@ td.retenu{background:var(--marque-douce);border-left:4px solid var(--accent);min
 .etat-envoi{margin-top:6px;font-size:13px;font-weight:700;padding:3px 8px;border-radius:5px;display:inline-block}
 .etat-envoi.envoi{background:var(--sunk);color:var(--muted)}
 .etat-envoi.cree{background:var(--ok-soft);color:var(--ok)}
+.etat-envoi.essai{background:var(--ok-soft);color:var(--ok)}
 .etat-envoi.erreur-envoi{background:var(--bad-soft);color:var(--bad)}
 .force-txt{color:var(--warn);font-weight:600}
 .a-completer{color:var(--bad);font-weight:700;font-size:15px}
@@ -445,12 +446,13 @@ function alertesMoyennes(lot){
 }
 
 // Où en est la création de l'expédition chez le transporteur (robot).
-const ENVOI = {en_attente:["envoi", "En file d'attente"], en_cours:["envoi", "Création en cours…"], cree:["cree", "Créée chez "], erreur:["erreur-envoi", "Erreur : "]};
+const ENVOI = {en_attente:["envoi", "En file d'attente"], en_cours:["envoi", "Création en cours…"], cree:["cree", "Créée chez "], essai:["essai", "Essai réussi chez "], erreur:["erreur-envoi", "Erreur : "]};
 function etatEnvoi(e){
   const v = (S.etat.envois || {})[e.num];
   if (!v || v.transporteur !== e.choix) return null;
   const [cls, lib] = ENVOI[v.statut] || ["envoi", v.statut];
-  const txt = v.statut === "cree" ? lib + v.transporteur + (v.numero ? " · n° " + v.numero : "") : v.statut === "erreur" ? lib + (v.message || "voir le robot") : lib;
+  const txt = v.statut === "cree" ? lib + v.transporteur + (v.numero ? " · n° " + v.numero : "")
+    : v.statut === "essai" ? lib + v.transporteur + " : formulaire rempli puis annulé (rien n'a été créé)" : v.statut === "erreur" ? lib + (v.message || "voir le robot") : lib;
   return h("div", {class:"etat-envoi " + cls}, txt);
 }
 

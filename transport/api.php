@@ -72,7 +72,7 @@ function grilles(): ?array { global $DATA; return lireJson("$DATA/grilles.json",
 function lotEnCours(): ?array { global $DATA; return lireJson("$DATA/lot.json", null); }
 function cheminHistorique(string $mois): string { global $DATA; return "$DATA/historique/$mois.json"; }
 function historiqueMois(string $mois): array { return lireJson(cheminHistorique($mois), ['expeditions' => []])['expeditions']; }
-// Expéditions confiées au robot : num => {transporteur, statut (en_attente | en_cours | cree | erreur), numero, message, donnees…}.
+// Expéditions confiées au robot : num => {transporteur, statut (en_attente | en_cours | cree | essai | erreur), numero, message, donnees…}.
 function envois(): array { global $DATA; return lireJson("$DATA/envois.json", []); }
 
 function moisValide(mixed $m): string
@@ -226,7 +226,7 @@ if (str_starts_with($action, 'robot_')) {
             $num = (string) ($entree['num'] ?? '');
             if (!isset($env[$num])) erreur('Expédition inconnue.', 404);
             $statut = (string) ($entree['statut'] ?? '');
-            if (!in_array($statut, ['cree', 'erreur'], true)) erreur('Statut inconnu.');
+            if (!in_array($statut, ['cree', 'essai', 'erreur'], true)) erreur('Statut inconnu.'); // essai = mode répétition : rempli puis annulé
             $env[$num] = array_merge($env[$num], ['statut' => $statut, 'numero' => mb_substr((string) ($entree['numero'] ?? ''), 0, 40),
                 'message' => mb_substr((string) ($entree['message'] ?? ''), 0, 300), 'maj_le' => date('c')]);
             ecrireJson("$DATA/envois.json", $env);

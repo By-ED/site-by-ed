@@ -130,7 +130,7 @@ async function creerStation(page, x, nom) {
   if (MODE !== 'reel') {
     if (ENV.VISIBLE === 'oui') await page.waitForTimeout(6000); // démonstration : le temps de regarder le formulaire rempli
     await f.locator('input[type=reset]').first().click();
-    return { statut: 'erreur', message: `répétition : formulaire rempli puis annulé (capture ${path.basename(capture)})` };
+    return { statut: 'essai', message: `formulaire rempli puis annulé (capture ${path.basename(capture)})` };
   }
 
   await f.locator('input[name=FormExpedentCompletSubmitBt]').click();
@@ -206,7 +206,7 @@ async function creerBmv(page, x) {
     if (ENV.VISIBLE === 'oui') await page.waitForTimeout(6000); // démonstration : le temps de regarder le formulaire rempli
     page.once('dialog', (d) => d.accept().catch(() => {}));
     await page.locator('#BtnFermer').click();
-    return { statut: 'erreur', message: `répétition : formulaire rempli puis fermé sans enregistrer (capture ${path.basename(capture)})` };
+    return { statut: 'essai', message: `formulaire rempli puis fermé sans enregistrer (capture ${path.basename(capture)})` };
   }
 
   await page.locator('#BtnEnregistrer_pos').click();
