@@ -113,7 +113,7 @@ Règles (validées par le propriétaire) :
   (« pistes d'économie » retirées à sa demande).
 - Retour FLOW ONE : l'export d'origine octet pour octet ; seuls DEOCARRIER, CARRIERDESIGNATION et les colonnes de la table
   de correspondance changent (contrôle avant export). Bons groupés : prix, poids et palettes sur le bon principal, 0 sur les autres.
-  Sens de DEONUMERIC : 04 = prix du transport, écrit par l'outil ; 05 = numéro client (lu, jamais modifié) (confirmés par le propriétaire) ; 01, 02, 03, 06 pas encore donnés, ne jamais les deviner.
+  Sens de DEONUMERIC : 01 = poids pesé (kg) ; 03 = nombre de palettes (format pas encore précisé) ; 04 = prix du transport, écrit par l'outil ; 05 = numéro client (lu, jamais modifié) (confirmés par le propriétaire) ; 02 et 06 pas encore donnés, ne jamais les deviner.
 
 Robot (phase 2, `transport/robot/`, Node.js + Playwright) : tourne sur un VPS OVHcloud (VPS-1, Canada, Ubuntu 24.04 ; O2switch ne peut pas
 piloter un navigateur). Bouton du site « Créer chez les transporteurs » → `data/envois.json` (file d'attente) ; le robot lit `api.php?a=robot_a_faire`
