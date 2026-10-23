@@ -1,0 +1,13 @@
+Options -Indexes
+DirectoryIndex index.html
+
+# Seuls index.html et logo.png sont utiles au navigateur.
+<FilesMatch "^(LISEZMOI\.txt|construire-zip\.sh)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

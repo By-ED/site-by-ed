@@ -139,3 +139,18 @@ XPO 04, 05, 06, 09, 11, 13, 14, 17, 20, 22, 29, 30, 31, 32, 33, 34, 40, 47, 64, 
 En attente du propriétaire : colonnes palettes dans l'export (pour l'instant saisie dans l'outil), sens des DEONUMERIC,
 codes FLOW ONE de BMV et XPO, formats d'import des transporteurs (CSV provisoire en attendant, `FORMATS_TRANSPORTEUR`),
 poids maximum BMV (existe, valeur non donnée).
+
+---
+
+# Réduction de photos (`photo/`)
+
+Pour Euro Distribution : on glisse une ou plusieurs photos, chacune est réduite et téléchargée aussitôt.
+Page statique (`index.html` seul, pas de PHP, pas de code d'accès : les photos ne quittent jamais l'ordinateur, choix du propriétaire).
+Mêmes couleurs, polices et logo que le site transport. Adresse proposée : photo.galan-ga.com (racine `/home/reev5185/photo`,
+DNS Shopify : A `photo` → 109.234.166.238). `construire-zip.sh` → `photo-o2switch.zip` ; `LISEZMOI.txt` = installation.
+
+Règles : 2000 px sur le côté le plus long (`TAILLE_MAX`, choix du propriétaire ; une photo plus petite n'est pas agrandie, à confirmer),
+JPEG de moins de 600 Ko (`POIDS_MAX` = 600 000 octets, valable que l'ordinateur compte le Ko à 1000 ou 1024 octets), perte de qualité minimale :
+réduction par le navigateur jusqu'à 4000 px puis pica (cdnjs) jusqu'à 2000 px, puis la qualité JPEG la plus haute qui tient
+sous 600 Ko (dichotomie). JPEG déjà sous 600 Ko et 2000 px : rendue telle quelle. Fond blanc pour les PNG transparents.
+HEIC d'iPhone : lu par Safari, sinon heic2any (cdnjs, chargé seulement si besoin). Même nom de fichier, en .jpg.

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Euro Distribution · Réduction de photos</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Questrial&display=swap">
+<style>
+/* Une seule action : glisser une photo. Elle est réduite dans le navigateur et téléchargée aussitôt. */
+:root{
+  /* Couleurs Euro Distribution, reprises de by-ed.fr : noir, crème, orange. */
+  --marque:#020202; --marque-texte:#f4f2ea;
+  --bg:#f4f2ea; --surface:#ffffff; --sunk:#e9e6dc; --ink:#15202b; --muted:#566573; --line:#d6d1c4;
+  --accent:#cf4716; --accent-soft:#fbe3d8; --on-accent:#ffffff;
+  --ok:#17783a; --ok-soft:#dcefe2; --bad:#b0281d; --bad-soft:#f8dedb;
+  --f-body:Questrial,"Helvetica Neue",Arial,sans-serif; --f-titre:Archivo,"Helvetica Neue",Arial,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1418; --surface:#171e24; --sunk:#1f2830; --ink:#e3e9ee; --muted:#9aa8b4; --line:#2e3a44;
+  --accent:#e5683a; --accent-soft:#3a1d12; --on-accent:#ffffff;
+  --ok:#6dd08f; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#3d1c1a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1418; --surface:#171e24; --sunk:#1f2830; --ink:#e3e9ee; --muted:#9aa8b4; --line:#2e3a44;
+  --accent:#e5683a; --accent-soft:#3a1d12; --on-accent:#ffffff;
+  --ok:#6dd08f; --ok-soft:#173424; --bad:#ff8f86; --bad-soft:#3d1c1a;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+.wrap{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+p{margin:0}
+h1,h2{margin:0;text-wrap:balance}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.muted{color:var(--muted)}
+/* en-tête */
+header.wrap{padding-bottom:0}
+.tete{background:var(--marque);color:var(--marque-texte);padding:10px 16px;border-radius:0 0 12px 12px}
+.marque{display:flex;align-items:center;gap:12px;font-family:var(--f-titre);font-weight:800;font-size:19px;letter-spacing:-.01em}
+.marque img{height:44px;width:44px;border-radius:50%}
+.marque small{display:block;font-weight:500;font-size:13px;opacity:.85}
+/* zone de dépôt : toute la carte est cliquable, et toute la page accepte le glisser-déposer */
+.depot{margin-top:24px;display:grid;place-items:center;align-content:center;gap:14px;min-height:340px;padding:32px 20px;text-align:center;
+  background:var(--surface);border:3px dashed color-mix(in srgb,var(--accent) 55%,transparent);border-radius:18px;cursor:pointer;
+  transition:background .15s,border-color .15s,transform .15s}
+.depot:hover{border-color:var(--accent)}
+.depot:focus-within{border-color:var(--accent);outline:3px solid var(--accent);outline-offset:3px}
+body.survol .depot{background:var(--accent-soft);border-style:solid;border-color:var(--accent);transform:scale(1.01)}
+.depot svg{width:72px;height:72px;color:var(--accent)}
+.depot h1{font-family:var(--f-titre);font-weight:800;font-size:clamp(26px,5vw,36px);letter-spacing:-.02em;line-height:1.1}
+.depot .ou{font-size:17px}
+.depot .bouton{display:inline-flex;align-items:center;gap:8px;font-weight:700;padding:10px 20px;border-radius:8px;background:var(--accent);color:var(--on-accent)}
+.cache{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.regles{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.regles li{font-size:14px;padding:5px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.regles b{font-family:var(--f-titre);font-weight:800}
+.prive{margin-top:10px;text-align:center;font-size:13px}
+/* photos réduites */
+.resultats{margin-top:28px;display:grid;gap:10px}
+.resultats[hidden]{display:none}
+.resultats-tete{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.resultats-tete h2{font-family:var(--f-titre);font-size:18px}
+.lien{background:none;border:0;padding:2px 0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+#liste{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ligne{display:grid;grid-template-columns:64px 1fr auto auto;align-items:center;gap:6px 14px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.vignette{width:64px;height:64px;border-radius:6px;background:var(--sunk);object-fit:cover;display:block}
+.infos{min-width:0;display:grid;gap:2px}
+.infos b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.infos span{font-size:14px;color:var(--muted)}
+.poids{text-align:right;white-space:nowrap;font-size:14px;color:var(--muted)}
+.poids b{display:block;font-family:var(--f-titre);font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;color:var(--ok)}
+.btn{font-weight:700;border-radius:6px;padding:8px 14px;min-height:40px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.ligne.encours .infos span::before{content:"";display:inline-block;width:10px;height:10px;margin-right:7px;border-radius:50%;border:2px solid var(--accent);border-right-color:transparent;animation:tourne .8s linear infinite;vertical-align:-1px}
+.ligne.erreur{background:var(--bad-soft);border-color:var(--bad)}
+.ligne.erreur .infos span{color:var(--bad);font-weight:700}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.depot{transition:none}body.survol .depot{transform:none}.ligne.encours .infos span::before{animation:none}}
+@media (max-width:560px){
+  .ligne{grid-template-columns:56px 1fr}
+  .vignette{width:56px;height:56px}
+  .poids{grid-column:1 / -1;text-align:left;display:flex;gap:10px;align-items:baseline}
+  .poids b{display:inline;font-size:17px}
+  .ligne .btn{grid-column:1 / -1}
+}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="tete">
+    <div class="marque"><img src="logo.png" alt=""><div>Euro Distribution<small>Réduction de photos</small></div></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <label class="depot" for="choix">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="13" rx="2"/><circle cx="8.5" cy="7.5" r="1.5"/><path d="m21 13-4.5-4.5L8 16"/><path d="M12 22v-4m0 4-2-2m2 2 2-2"/>
+    </svg>
+    <h1>Glissez vos photos ici</h1>
+    <p class="ou muted">ou</p>
+    <span class="bouton">Choisir des photos</span>
+    <input class="cache" id="choix" type="file" accept="image/*,.heic,.heif" multiple>
+  </label>
+  <ul class="regles">
+    <li><b>2000 px</b> côté le plus long</li>
+    <li>moins de <b>600 Ko</b></li>
+    <li>la meilleure qualité possible</li>
+    <li>téléchargée aussitôt</li>
+  </ul>
+  <p class="prive muted">Les photos sont réduites sur cet ordinateur : elles ne sont envoyées nulle part.</p>
+
+  <section class="resultats" hidden>
+    <div class="resultats-tete">
+      <h2>Photos réduites</h2>
+      <button class="lien" id="vider" type="button">Vider la liste</button>
+    </div>
+    <ul id="liste" aria-live="polite"></ul>
+  </section>
+</main>
+
+<script>
+"use strict";
+const TAILLE_MAX = 2000;       // côté le plus long, en pixels (choix du propriétaire) ; une photo plus petite n'est pas agrandie
+const POIDS_MAX = 600000;      // octets : reste sous 600 Ko que l'ordinateur compte 1000 ou 1024 octets par Ko
+const PALIER = 2 * TAILLE_MAX; // le navigateur ramène d'abord la photo à 4000 px, pica fait la réduction finale (plus nette)
+const PICA = { src: "https://cdnjs.cloudflare.com/ajax/libs/pica/9.0.1/pica.min.js",
+  integrity: "sha384-erKD4aAW95PJjutWX+eFrsIh9Kl6k9mLJ89rDrWhF2/EvCdxqe2aR5tDaI4SIFl/" };
+const HEIC = { src: "https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js", // photos d'iPhone, chargé seulement si besoin
+  integrity: "sha384-OTofQ0MEeiSgh62havBcemCIK0gqj809wX6UA0uPISNMRnR6NZyCdGzX3SbLrgwL" };
+const SANS_INTERNET = "Connexion internet nécessaire.";
+
+const $ = s => document.querySelector(s);
+const scripts = {};
+function charger({ src, integrity }) {
+  return scripts[src] ??= new Promise((ok, ko) => {
+    const s = document.createElement("script");
+    Object.assign(s, { src, integrity, crossOrigin: "anonymous", onload: ok });
+    s.onerror = () => { delete scripts[src]; s.remove(); ko(new Error(SANS_INTERNET)); };
+    document.head.append(s);
+  });
+}
+const redim = charger(PICA).then(() => window.pica()).catch(() => null); // sans pica : réduction par le navigateur
+
+/* ---------- réduction ---------- */
+
+function dimensions(l, h, max) {
+  const k = Math.min(1, max / Math.max(l, h));
+  return [Math.round(l * k), Math.round(h * k)];
+}
+
+function toile(l, h) {
+  const c = document.createElement("canvas");
+  c.width = l; c.height = h;
+  return c;
+}
+
+// Fond blanc : une image transparente (PNG) ne devient pas noire en JPEG.
+function dessiner(source, l, h) {
+  const c = toile(l, h), ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, l, h);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, l, h);
+  return c;
+}
+
+async function affiner(source, l, h) {
+  const p = await redim;
+  if (p) {
+    try { return await p.resize(source, toile(l, h)); } catch { /* repli ci-dessous */ }
+  }
+  return dessiner(source, l, h);
+}
+
+function jpeg(c, qualite) {
+  return new Promise((ok, ko) => c.toBlob(b => b ? ok(b) : ko(new Error("La photo n'a pas pu être enregistrée.")), "image/jpeg", qualite));
+}
+
+// Qualité la plus haute qui tient sous POIDS_MAX (recherche par dichotomie, au centième près).
+async function encoder(c) {
+  const pleine = await jpeg(c, 1);
+  if (pleine.size <= POIDS_MAX) return { blob: pleine, qualite: 1 };
+  let bas = 0, haut = 1, retenu = null;
+  for (let i = 0; i < 7; i++) {
+    const q = (bas + haut) / 2;
+    const b = await jpeg(c, q);
+    if (b.size <= POIDS_MAX) { retenu = { blob: b, qualite: q }; bas = q; } else haut = q;
+  }
+  return retenu ?? { blob: await jpeg(c, 0), qualite: 0 };
+}
+
+function decoder(blob) {
+  const img = new Image();
+  img.src = URL.createObjectURL(blob);
+  return img.decode().then(() => img, () => { URL.revokeObjectURL(img.src); throw new Error("illisible"); });
+}
+
+const estHeic = f => /image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
+
+// Safari lit les photos HEIC d'iPhone ; les autres navigateurs passent par heic2any (conversion sans perte en PNG).
+async function ouvrir(f, etape) {
+  try { return await decoder(f); } catch { /* format non lu par ce navigateur */ }
+  if (!estHeic(f)) throw new Error("Ce fichier n'est pas une photo lisible.");
+  etape("Conversion de la photo d'iPhone…");
+  try {
+    await charger(HEIC);
+    const png = await window.heic2any({ blob: f, toType: "image/png" });
+    return await decoder(Array.isArray(png) ? png[0] : png);
+  } catch (e) {
+    throw new Error(e.message === SANS_INTERNET ? e.message : "Cette photo d'iPhone n'a pas pu être lue.");
+  }
+}
+
+async function reduire(f, etape) {
+  const img = await ouvrir(f, etape);
+  try {
+    const l = img.naturalWidth, h = img.naturalHeight;
+    // Déjà conforme : on garde le fichier d'origine, une nouvelle compression ne ferait que perdre de la qualité.
+    if (f.type === "image/jpeg" && f.size <= POIDS_MAX && Math.max(l, h) <= TAILLE_MAX) {
+      return { blob: f, nom: f.name, l, h, qualite: null };
+    }
+    etape("Réduction…");
+    const [lf, hf] = dimensions(l, h, TAILLE_MAX);
+    const [lp, hp] = dimensions(l, h, PALIER);
+    let c = dessiner(img, lp, hp);
+    if (lp !== lf) c = await affiner(c, lf, hf);
+    const { blob, qualite } = await encoder(c);
+    return { blob, nom: f.name.replace(/\.[^.]*$/, "") + ".jpg", l: lf, h: hf, qualite };
+  } finally {
+    URL.revokeObjectURL(img.src);
+  }
+}
+
+/* ---------- page ---------- */
+
+const liens = [];
+let file = Promise.resolve();
+
+function poids(octets) {
+  if (octets < 1e6) return Math.max(1, Math.round(octets / 1e3)) + " Ko";
+  return (octets / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " Mo";
+}
+
+function el(tag, attrs = {}, ...enfants) {
+  const e = document.createElement(tag);
+  Object.assign(e, attrs);
+  e.append(...enfants.filter(x => x != null));
+  return e;
+}
+
+function telecharger(url, nom) {
+  const a = el("a", { href: url, download: nom });
+  document.body.append(a);
+  a.click();
+  a.remove();
+}
+
+function ajouter(fichiers) {
+  if (!fichiers.length) return;
+  $(".resultats").hidden = false;
+  for (const f of fichiers) {
+    const detail = el("span", { textContent: "En attente…" });
+    const ligne = el("li", { className: "ligne encours" },
+      el("div", { className: "vignette" }),
+      el("div", { className: "infos" }, el("b", { textContent: f.name, title: f.name }), detail));
+    $("#liste").prepend(ligne);
+    file = file.then(() => traiter(f, ligne, detail));
+  }
+}
+
+async function traiter(f, ligne, detail) {
+  detail.textContent = "Lecture…";
+  try {
+    const r = await reduire(f, t => { detail.textContent = t; });
+    const url = URL.createObjectURL(r.blob);
+    liens.push(url);
+    ligne.className = "ligne";
+    ligne.firstChild.replaceWith(el("img", { className: "vignette", src: url, alt: "" }));
+    ligne.querySelector(".infos b").textContent = r.nom;
+    detail.textContent = `${r.l} × ${r.h} px · ` + (r.qualite == null
+      ? "déjà conforme, gardée telle quelle"
+      : `qualité ${Math.round(r.qualite * 100)} %`) + " · téléchargée";
+    ligne.append(
+      el("div", { className: "poids" }, r.qualite == null ? null : poids(f.size) + " →", el("b", { textContent: poids(r.blob.size) })),
+      el("button", { className: "btn", type: "button", textContent: "Télécharger", onclick: () => telecharger(url, r.nom) }));
+    telecharger(url, r.nom);
+  } catch (e) {
+    ligne.className = "ligne erreur";
+    detail.textContent = e.message || "Cette photo n'a pas pu être réduite.";
+  }
+}
+
+$("#choix").addEventListener("change", e => { ajouter([...e.target.files]); e.target.value = ""; });
+
+$("#vider").addEventListener("click", () => {
+  liens.splice(0).forEach(u => URL.revokeObjectURL(u));
+  $("#liste").replaceChildren();
+  $(".resultats").hidden = true;
+});
+
+// Glisser-déposer sur toute la page, pas seulement dans le cadre.
+let survols = 0;
+addEventListener("dragenter", e => { e.preventDefault(); survols++; document.body.classList.add("survol"); });
+addEventListener("dragleave", () => { if (--survols <= 0) { survols = 0; document.body.classList.remove("survol"); } });
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => {
+  e.preventDefault();
+  survols = 0;
+  document.body.classList.remove("survol");
+  ajouter([...e.dataTransfer.files]);
+});
+</script>
+</body>
+</html>

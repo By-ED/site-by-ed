@@ -1,0 +1,30 @@
+RÉDUCTION DE PHOTOS : INSTALLATION SUR O2SWITCH
+(environ 5 minutes, une seule fois)
+
+Le site n'a ni base de données ni code d'accès : les photos sont réduites dans le navigateur
+et ne sont jamais envoyées sur le serveur.
+
+1. ENVOYER LES FICHIERS
+   - cPanel o2switch > Gestionnaire de fichiers > dossier principal (/home/votre-identifiant).
+   - Bouton « Charger » > choisissez photo-o2switch.zip.
+   - Clic droit sur photo-o2switch.zip > « Extract ». Un dossier « photo » apparaît.
+   - Vous pouvez supprimer le fichier zip.
+
+2. CRÉER L'ADRESSE DU SITE
+   - cPanel > Domaines > Créer un domaine (par exemple photo.votre-domaine.fr).
+   - Décochez « Partager la racine du document », racine du document : photo.
+   - Si le domaine est géré ailleurs (Shopify, par exemple) : ajoutez chez lui un enregistrement A
+     vers l'adresse IP du serveur o2switch (même principe que pour les autres sites).
+   - Attendez le certificat (cadenas) : cPanel > SSL/TLS Status > « Run AutoSSL » si besoin.
+
+3. UTILISATION
+   - Ouvrez le site et glissez une ou plusieurs photos dans le cadre (ou cliquez pour les choisir).
+   - Chaque photo est mise à 2000 pixels sur son côté le plus long (une photo plus petite n'est pas agrandie),
+     enregistrée en JPEG sous 600 Ko avec la meilleure qualité qui tient dans ce poids,
+     puis téléchargée aussitôt dans le dossier « Téléchargements », sous le même nom en .jpg.
+   - Une photo JPEG déjà sous 600 Ko et sous 2000 pixels est rendue telle quelle (aucune perte).
+   - Photos d'iPhone (HEIC) acceptées.
+   - Si le navigateur demande l'autorisation de télécharger plusieurs fichiers : répondez « Autoriser ».
+
+BON À SAVOIR
+   - Mise à jour du site : remplacez index.html.
