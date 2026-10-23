@@ -159,6 +159,18 @@ details.section > .corps{padding:0 16px 16px;display:grid;gap:14px}
 .chargement{padding:40px 0;color:var(--muted)}
 @media (max-width:700px){.marque small{display:none}.barre{position:static}}
 </style>
+<script>
+// Grand écran : toute la page est agrandie à la taille de l'écran (texte, tableau, boutons), sans jamais rapetisser.
+// La page est dessinée pour environ 1400 × 820 ; on agrandit selon la dimension la plus limitante, jusqu'à 2 fois.
+(function () {
+  const ajuster = () => {
+    const z = Math.min(2, Math.max(1, Math.min(innerWidth / 1400, innerHeight / 820)));
+    document.documentElement.style.zoom = z.toFixed(2);
+  };
+  ajuster();
+  addEventListener('resize', ajuster);
+})();
+</script>
 </head>
 <body>
 <div class="wrap" id="app"></div>
