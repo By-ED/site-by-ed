@@ -229,8 +229,16 @@ const TRANSPORTEURS = {
 
 // ---------- Boucle ----------
 
+// Démonstration : fenêtre visible, ralentie, placée à l'écran (FENETRE=x,y,largeur,hauteur).
+function optionsNavigateur() {
+  const o = { headless: ENV.VISIBLE !== 'oui', slowMo: Number(ENV.RALENTI || 0) };
+  const f = (ENV.FENETRE || '').split(',').map(Number);
+  if (f.length === 4 && f.every(Number.isFinite)) o.args = [`--window-position=${f[0]},${f[1]}`, `--window-size=${f[2]},${f[3]}`];
+  return o;
+}
+
 const nouvellePage = async (navigateur) =>
-  (await navigateur.newContext({ locale: 'fr-FR', viewport: { width: 1500, height: 900 } })).newPage();
+  (await navigateur.newContext({ locale: 'fr-FR', viewport: ENV.FENETRE ? null : { width: 1500, height: 900 } })).newPage();
 
 // Expéditions d'un transporteur, sur une seule session.
 async function traiter(navigateur, nom, liste) {
@@ -255,7 +263,7 @@ async function traiter(navigateur, nom, liste) {
 async function passage() {
   const { expeditions } = await site('robot_a_faire');
   if (!expeditions.length) return;
-  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui', slowMo: Number(ENV.RALENTI || 0) });
+  const navigateur = await chromium.launch(optionsNavigateur());
   try {
     for (const x of expeditions.filter((e) => !TRANSPORTEURS[e.transporteur])) {
       await site('robot_resultat', { num: x.num, statut: 'erreur', message: `robot : ${x.transporteur} pas encore pris en charge` });
@@ -274,7 +282,7 @@ async function essai(nom) {
   if (MODE === 'reel') throw new Error('essai refusé : repasser MODE=repetition dans .env');
   const t = TRANSPORTEURS[nom];
   if (!t) throw new Error(`transporteur inconnu : ${nom}`);
-  const navigateur = await chromium.launch({ headless: ENV.VISIBLE !== 'oui', slowMo: Number(ENV.RALENTI || 0) });
+  const navigateur = await chromium.launch(optionsNavigateur());
   try {
     const page = await nouvellePage(navigateur);
     await t.connexion(page);
