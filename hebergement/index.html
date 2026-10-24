@@ -561,12 +561,18 @@ function blocCartes(c, prog, genActive){
   }
   const res = prog.cartes || {};
   const aRevoir = cartes.filter(k => res[k.id] === 0), sues = cartes.filter(k => res[k.id] === 1).length;
-  const depart = (titre, sous, liste, primaire) => h("button", {class:"btn depart" + (primaire ? " primaire" : ""), type:"button", disabled:!liste.length || null, onclick:() => demarrerCartes(c, liste)}, h("span", {}, titre), h("small", {}, sous));
+  // Paquet commencé puis interrompu : il reprend là où elle s'est arrêtée.
+  const paquet = prog.paquet, parId = new Map(cartes.map(k => [k.id, k]));
+  const restantes = paquet ? (paquet.file || []).filter(id => parId.has(id)) : [];
+  const bouton = (titre, sous, off, primaire, fn) => h("button", {class:"btn depart" + (primaire ? " primaire" : ""), type:"button", disabled:off || null, onclick:fn}, h("span", {}, titre), h("small", {}, sous));
+  const depart = (titre, sous, liste, primaire) => bouton(titre, sous, !liste.length, primaire, () => demarrerCartes(c, liste));
   return h("section", {class:"sec serie"},
     h("h2", {}, "Flashcards", h("span", {class:"compte"}, String(cartes.length))),
     h("p", {class:"muted petit"}, "Lis la question, réponds de tête, retourne la carte puis dis si tu savais. " + sues + " " + pluriel(sues, "sue", "sues") + " · " + aRevoir.length + " à revoir · " + (cartes.length - sues - aRevoir.length) + " jamais vues."),
     h("div", {class:"departs"},
-      depart("Toutes les cartes", cartes.length + " cartes", cartes, true),
+      restantes.length ? bouton("Reprendre", (paquet.total - restantes.length) + " / " + paquet.total + " · arrêté le " + fmtDate(paquet.maj), false, true,
+        () => reprendreCartes(c, paquet, restantes.map(id => parId.get(id)))) : null,
+      depart("Toutes les cartes", cartes.length + " cartes", cartes, !restantes.length),
       depart("À revoir", aRevoir.length ? aRevoir.length + " à revoir" : "aucune pour l'instant", aRevoir)));
 }
 function ligneCouts(couts){
@@ -660,7 +666,7 @@ async function enregistrer(Q){
   const par = {};
   for (const x of rep){ const n = String(x.q.niveau); par[n] = par[n] || {p:0, m:0}; par[n].p = round2(par[n].p + x.points); par[n].m++; p.dernier[x.q.id] = x.points; }
   p.tentatives.push({date:new Date().toISOString(), mode:Q.mode, portee:Q.portee, points:round2(rep.reduce((s, x) => s + x.points, 0)), max:rep.length, parNiveau:par});
-  S.progres = Object.assign({}, S.progres, {[Q.coursId]:p});
+  S.progres = Object.assign({}, S.progres, {[Q.coursId]:Object.assign({}, ancien, p)});
   try { await api("progres", {id:Q.coursId, progres:p}); S.sauvegarde = "ok"; }
   catch { S.sauvegarde = "echec"; }
   if (S.vue === "fin") render();
@@ -713,9 +719,15 @@ function vueQuiz(){
 }
 // ----- Flashcards -----
 // Une carte « à revoir » repasse en fin de paquet jusqu'à ce qu'elle soit sue ; son résultat enregistré reste « à revoir ».
+// Le paquet est enregistré sur le serveur après chaque carte : elle peut le reprendre des jours après, sur n'importe quel appareil.
 function demarrerCartes(c, liste){
   if (!liste.length) return;
-  S.flash = {coursId:c.id, titre:c.titre, file:shuffle(liste), total:liste.length, retournee:false, resultats:{}, sauves:0};
+  S.flash = {coursId:c.id, titre:c.titre, file:shuffle(liste), total:liste.length, retournee:false, resultats:{}, debut:new Date().toISOString()};
+  sauverPaquet(S.flash);
+  aller("cartes");
+}
+function reprendreCartes(c, paquet, file){
+  S.flash = {coursId:c.id, titre:c.titre, file, total:paquet.total, retournee:false, resultats:Object.assign({}, paquet.resultats || {}), debut:paquet.debut};
   aller("cartes");
 }
 function retourner(){ if (!S.flash.retournee){ S.flash.retournee = true; render(); } }
@@ -726,22 +738,25 @@ function noterCarte(savais){
   if (!savais){ F.resultats[k.id] = 0; F.file.push(k); }
   else if (!(k.id in F.resultats)) F.resultats[k.id] = 1;
   F.retournee = false;
-  if (!F.file.length) enregistrerCartes(F);
+  sauverPaquet(F);
   render(); window.scrollTo(0, 0);
 }
-async function enregistrerCartes(F){
-  const n = Object.keys(F.resultats).length;
-  if (!n || n === F.sauves) return;
-  F.sauves = n;
+// Les envois partent l'un après l'autre, pour que le serveur garde toujours le dernier état du paquet.
+let envoisPaquet = Promise.resolve();
+function sauverPaquet(F){
   const ancien = S.progres[F.coursId] || {};
-  const p = {tentatives:ancien.tentatives || [], dernier:ancien.dernier || {}, cartes:Object.assign({}, ancien.cartes || {}, F.resultats)};
-  S.progres = Object.assign({}, S.progres, {[F.coursId]:p});
-  try { await api("progres", {id:F.coursId, progres:p}); F.erreurSauvegarde = false; }
-  catch { F.erreurSauvegarde = true; F.sauves = 0; }
-  if (S.vue === "cartes") render();
+  const local = Object.assign({}, ancien, {cartes:Object.assign({}, ancien.cartes || {}, F.resultats)});
+  const corps = {id:F.coursId, resultats:Object.assign({}, F.resultats), file:F.file.map(k => k.id), total:F.total, debut:F.debut};
+  if (corps.file.length) local.paquet = {file:corps.file, total:F.total, resultats:corps.resultats, debut:F.debut, maj:new Date().toISOString()};
+  else delete local.paquet;
+  S.progres = Object.assign({}, S.progres, {[F.coursId]:local});
+  envoisPaquet = envoisPaquet.then(() => api("cartes_progres", corps)).then(() => false, () => true).then(echec => {
+    if (echec === !!F.erreurSauvegarde) return;
+    F.erreurSauvegarde = echec;
+    if (S.vue === "cartes" && S.flash === F) render();
+  });
 }
-function quitterCartes(){ enregistrerCartes(S.flash); ouvrirCours(S.flash.coursId); }
-document.addEventListener("visibilitychange", () => { if (document.hidden && S.vue === "cartes") enregistrerCartes(S.flash); });
+function quitterCartes(){ ouvrirCours(S.flash.coursId); }
 function vueCartes(){
   const F = S.flash, k = F.file[0];
   const nRevoir = Object.values(F.resultats).filter(x => x === 0).length;
@@ -768,6 +783,7 @@ function vueCartes(){
       h("span", {class:"q-count"}, sues + " / " + F.total + " " + pluriel(sues, "sue", "sues")),
       h("span", {}, nRevoir + " à revoir")),
     h("div", {class:"progress"}, barre),
+    F.erreurSauvegarde ? h("p", {class:"alerte"}, "Ta progression n'est pas enregistrée pour l'instant (connexion ?). Elle le sera à la prochaine carte si la connexion revient.") : null,
     h("article", {class:"carte" + (F.retournee ? "" : " recto"), onclick:F.retournee ? null : retourner},
       h("p", {class:"eyebrow"}, "Question"),
       h("h2", {class:"carte-q"}, k.recto),

@@ -783,7 +783,28 @@ switch ($action) {
             $tout = lireJson("$DATA/progres.json", []);
             // cartes : dernier résultat de chaque flashcard (1 = sue, 0 = à revoir) ; gardé si le navigateur ne l'envoie pas.
             $cartes = is_array($p['cartes'] ?? null) ? $p['cartes'] : ($tout[$id]['cartes'] ?? []);
-            $tout[$id] = ['tentatives' => array_slice($p['tentatives'], -200), 'dernier' => (object) ($p['dernier'] ?? []), 'cartes' => (object) $cartes];
+            $tout[$id] = ['tentatives' => array_slice($p['tentatives'], -200), 'dernier' => (object) ($p['dernier'] ?? []), 'cartes' => (object) $cartes]
+                + array_intersect_key($tout[$id] ?? [], ['paquet' => 1]);
+            ecrireJson("$DATA/progres.json", $tout);
+        });
+        repondre(200, ['ok' => true]);
+
+    case 'cartes_progres':
+        // Après chaque flashcard : résultats de la séance et paquet en cours, pour reprendre là où elle s'est arrêtée.
+        $id = idValide($entree['id'] ?? null);
+        $estCarte = fn ($k) => is_string($k) && preg_match('/^k[0-9a-f]{10}$/', $k);
+        $resultats = [];
+        foreach ((array) ($entree['resultats'] ?? []) as $k => $v) if ($estCarte($k) && in_array($v, [0, 1], true)) $resultats[$k] = $v;
+        $file = array_slice(array_values(array_filter((array) ($entree['file'] ?? []), $estCarte)), 0, CARTES_MAX);
+        $paquet = ['file' => $file, 'total' => max(count($file), min(CARTES_MAX, (int) ($entree['total'] ?? 0))), 'resultats' => (object) $resultats,
+            'debut' => mb_substr((string) ($entree['debut'] ?? ''), 0, 40), 'maj' => gmdate('c')];
+        avecVerrou('progres', function () use ($DATA, $id, $resultats, $file, $paquet) {
+            $tout = lireJson("$DATA/progres.json", []);
+            $p = $tout[$id] ?? ['tentatives' => []];
+            $p['dernier'] = (object) ($p['dernier'] ?? []);
+            $p['cartes'] = (object) array_merge((array) ($p['cartes'] ?? []), $resultats);
+            if ($file) $p['paquet'] = $paquet; else unset($p['paquet']);
+            $tout[$id] = $p;
             ecrireJson("$DATA/progres.json", $tout);
         });
         repondre(200, ['ok' => true]);

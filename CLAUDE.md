@@ -62,6 +62,8 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Flashcards : recto = une question, verso = la réponse courte, sur toutes les notions du cours (15 à 60 cartes selon la longueur).
   Révision simple : « Je savais » / « À revoir » ; une carte ratée repasse en fin de paquet et reste « à revoir » pour la fois suivante.
   Un seul paquet par cours (pas de séries) ; son coût est compté dans la création.
+  Le paquet en cours est enregistré après chaque carte (action `cartes_progres`) : bouton « Reprendre » là où elle s'est arrêtée,
+  même des jours après ou sur un autre appareil.
 - « Nouvelles questions » : nouvelle série sur un cours déjà enregistré (plan avec la liste des angles déjà posés) ;
   l'étudiante choisit Série 1, Série 2… ou Toutes. Champ `serie` sur chaque lot et chaque question (absent = 1).
 
@@ -72,7 +74,8 @@ Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostati
 Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots + `couts` : dollars par série, « 1 » = création), `questions/<id>.json`,
 `niveau` 4 = Mix (les items des lots Mix ont un champ `difficulte` 1 à 3, les questions Mix n'en ont pas),
 `sources/<id>.txt`, `cartes/<id>.json` (`{cartes: [{id, recto, verso}]}` ; état dans le cours : `cartesStatut`, `nbCartes`),
-`progres.json` (une seule élève ; par cours `tentatives`, `dernier` et `cartes` : `{carteId: 1 sue | 0 à revoir}`), `usage.json` (appels du jour, jetons du mois).
+`progres.json` (une seule élève ; par cours `tentatives`, `dernier`, `cartes` : `{carteId: 1 sue | 0 à revoir}`
+et `paquet` en cours : `{file: [carteId restantes], total, resultats, debut, maj}`), `usage.json` (appels du jour, jetons du mois).
 
 Artifact (base `db`) :
 
