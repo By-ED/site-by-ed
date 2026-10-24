@@ -15,6 +15,8 @@ et qcm.by-ed.fr (cPanel refuse deux adresses sur le même dossier).
 Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
 
 - `index.html` : toute l'interface (HTML + CSS + JS, pdf.js et JSZip chargés à la demande depuis cdnjs).
+  L'adresse garde la page affichée (`#/cours/<id>`, `#/quiz/<id>`, `#/cartes/<id>`, `#/ajout`) et le QCM en cours est gardé
+  dans `sessionStorage` : un rafraîchissement ramène au même endroit.
 - `api.php` : connexion, stockage en fichiers JSON dans `data/`, appels à Claude avec le SDK PHP officiel
   (`anthropic-ai/sdk` + Guzzle, via Composer). Les consignes envoyées à Claude sont écrites côté serveur :
   l'API ne sert qu'à créer des QCM, jamais de relais libre vers Claude.

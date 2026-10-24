@@ -371,7 +371,7 @@ async function demarrer(){
     history.replaceState(null, "", location.pathname);
     try { await api("connexion", {code}); } catch {}
   }
-  try { await chargerEtat(); S.vue = "accueil"; render(); }
+  try { await chargerEtat(); await restaurer(); }
   catch (e){ if (e.code !== "auth"){ S.vue = "accueil"; S.erreurPage = "Le site ne répond pas. Vérifie ta connexion et recharge la page."; render(); } }
 }
 
@@ -381,6 +381,57 @@ function render(){
   const k = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
   $app.replaceChildren((VUES[S.vue] || vueAccueil)());
   if (k){ const el = $app.querySelector('[data-k="' + CSS.escape(k) + '"]'); if (el) el.focus({preventScroll:true}); }
+  memoriserPage();
+}
+
+// ---------- Rechargement de la page ----------
+// L'adresse garde la page affichée (#/cours/…, #/quiz/…, #/cartes/…) et le QCM en cours est gardé dans l'onglet :
+// après un rafraîchissement, elle revient au même endroit.
+const CLE_QUIZ = "qcm-quiz-en-cours";
+function memoriserPage(){
+  if (S.vue === "chargement" || S.vue === "connexion") return;
+  const id = S.vue === "cartes" ? S.flash.coursId : (S.vue === "quiz" || S.vue === "fin") ? S.quiz.coursId
+    : S.vue === "cours" ? S.coursId : S.vue === "generation" ? S.gen.coursId : null;
+  const page = S.vue === "fin" ? "quiz" : S.vue === "generation" ? (id ? "cours" : "ajout") : S.vue;
+  const hash = page === "accueil" ? "" : page === "ajout" ? "#/ajout" : "#/" + page + "/" + id;
+  if (hash !== location.hash) history.replaceState(null, "", location.pathname + hash);
+  try {
+    if (S.vue !== "quiz" && S.vue !== "fin") sessionStorage.removeItem(CLE_QUIZ);
+    else sessionStorage.setItem(CLE_QUIZ, JSON.stringify({vue:S.vue, quiz:Object.assign({}, S.quiz, {items:S.quiz.items.map(x => ({id:x.q.id, ordre:x.ordre, choix:x.choix, valide:x.valide, fautes:x.fautes, points:x.points}))})}));
+  } catch {}
+}
+async function chargerQuestions(id){
+  if (id === "demo" || S.questionsCache[id]) return;
+  const d = await api("questions", undefined, "&id=" + encodeURIComponent(id));
+  S.questionsCache[id] = d.questions; S.cartesCache[id] = d.cartes || [];
+}
+async function restaurer(){
+  const [, page, id] = location.hash.match(/^#\/(\w+)(?:\/([\w-]+))?/) || [];
+  if (page === "ajout") return aller("ajout");
+  if (!id || (id !== "demo" && !S.cours.some(c => c.id === id))) return aller("accueil");
+  if (page === "quiz" || page === "cartes"){
+    try { await chargerQuestions(id); } catch { return ouvrirCours(id); }
+    if (page === "quiz" && reprendreQuiz(id)) return;
+    if (page === "cartes" && reprendrePaquet(id)) return;
+  }
+  ouvrirCours(id);
+}
+function reprendreQuiz(id){
+  let m = null;
+  try { m = JSON.parse(sessionStorage.getItem(CLE_QUIZ)); } catch {}
+  if (!m || !m.quiz || m.quiz.coursId !== id) return false;
+  const parId = new Map((questionsDe(id) || []).map(q => [q.id, q]));
+  if (!m.quiz.items.every(x => parId.has(x.id))) return false;
+  S.quiz = Object.assign({}, m.quiz, {items:m.quiz.items.map(x => Object.assign({}, x, {q:parId.get(x.id)}))});
+  aller(m.vue === "fin" ? "fin" : "quiz");
+  return true;
+}
+function reprendrePaquet(id){
+  const c = S.cours.find(x => x.id === id), paquet = (S.progres[id] || {}).paquet;
+  const file = cartesRestantes(paquet, S.cartesCache[id] || []);
+  if (!c || !file.length) return false;
+  reprendreCartes(c, paquet, file);
+  return true;
 }
 function aller(vue, extra){ Object.assign(S, extra || {}); S.erreurPage = null; S.vue = vue; render(); window.scrollTo(0, 0); }
 const lienRetour = (label, fn) => h("button", {class:"lien retour", type:"button", onclick:fn}, "← " + label);
@@ -397,7 +448,7 @@ function vueConnexion(){
     h("form", {class:"form carte-connexion", onsubmit:async e => {
       e.preventDefault();
       const btn = e.target.querySelector("button"); btn.disabled = true;
-      try { await api("connexion", {code:champ.value}); S.erreurCode = null; await chargerEtat(); aller("accueil"); }
+      try { await api("connexion", {code:champ.value}); S.erreurCode = null; await chargerEtat(); await restaurer(); }
       catch (err){ S.erreurCode = err.code === "code" ? "Ce code n'est pas le bon." : "Le site ne répond pas. Réessaie dans un moment."; render(); }
     }},
       h("div", {class:"champ"}, h("label", {for:"code"}, "Code d'accès"), champ,
@@ -472,7 +523,7 @@ const questionsDe = (id) => id === "demo" ? DEMO.questions : S.questionsCache[id
 async function ouvrirCours(id){
   aller("cours", {coursId:id, confirmSuppr:null, confirmSerie:null, confirmMix:null, confirmCartes:null, serie:null});
   if (id !== "demo" && !S.questionsCache[id]){
-    try { const d = await api("questions", undefined, "&id=" + encodeURIComponent(id)); S.questionsCache[id] = d.questions; S.cartesCache[id] = d.cartes || []; }
+    try { await chargerQuestions(id); }
     catch (e){ if (e.code !== "auth") S.erreurPage = "Les questions n'ont pas pu être chargées. Recharge la page."; }
     if (S.vue === "cours" && S.coursId === id) render();
   }
@@ -562,8 +613,7 @@ function blocCartes(c, prog, genActive){
   const res = prog.cartes || {};
   const aRevoir = cartes.filter(k => res[k.id] === 0), sues = cartes.filter(k => res[k.id] === 1).length;
   // Paquet commencé puis interrompu : il reprend là où elle s'est arrêtée.
-  const paquet = prog.paquet, parId = new Map(cartes.map(k => [k.id, k]));
-  const restantes = paquet ? (paquet.file || []).filter(id => parId.has(id)) : [];
+  const paquet = prog.paquet, restantes = cartesRestantes(paquet, cartes);
   const bouton = (titre, sous, off, primaire, fn) => h("button", {class:"btn depart" + (primaire ? " primaire" : ""), type:"button", disabled:off || null, onclick:fn}, h("span", {}, titre), h("small", {}, sous));
   const depart = (titre, sous, liste, primaire) => bouton(titre, sous, !liste.length, primaire, () => demarrerCartes(c, liste));
   return h("section", {class:"sec serie"},
@@ -571,7 +621,7 @@ function blocCartes(c, prog, genActive){
     h("p", {class:"muted petit"}, "Lis la question, réponds de tête, retourne la carte puis dis si tu savais. " + sues + " " + pluriel(sues, "sue", "sues") + " · " + aRevoir.length + " à revoir · " + (cartes.length - sues - aRevoir.length) + " jamais vues."),
     h("div", {class:"departs"},
       restantes.length ? bouton("Reprendre", (paquet.total - restantes.length) + " / " + paquet.total + " · arrêté le " + fmtDate(paquet.maj), false, true,
-        () => reprendreCartes(c, paquet, restantes.map(id => parId.get(id)))) : null,
+        () => reprendreCartes(c, paquet, restantes)) : null,
       depart("Toutes les cartes", cartes.length + " cartes", cartes, !restantes.length),
       depart("À revoir", aRevoir.length ? aRevoir.length + " à revoir" : "aucune pour l'instant", aRevoir)));
 }
@@ -725,6 +775,12 @@ function demarrerCartes(c, liste){
   S.flash = {coursId:c.id, titre:c.titre, file:shuffle(liste), total:liste.length, retournee:false, resultats:{}, debut:new Date().toISOString()};
   sauverPaquet(S.flash);
   aller("cartes");
+}
+// Cartes du paquet interrompu qui existent encore (dans l'ordre où elles restaient).
+function cartesRestantes(paquet, cartes){
+  if (!paquet) return [];
+  const parId = new Map(cartes.map(k => [k.id, k]));
+  return (paquet.file || []).filter(id => parId.has(id)).map(id => parId.get(id));
 }
 function reprendreCartes(c, paquet, file){
   S.flash = {coursId:c.id, titre:c.titre, file, total:paquet.total, retournee:false, resultats:Object.assign({}, paquet.resultats || {}), debut:paquet.debut};
