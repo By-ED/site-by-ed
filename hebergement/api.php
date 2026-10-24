@@ -656,7 +656,7 @@ switch ($action) {
         exit;
 
     case 'mix':
-        // Ajoute la rubrique Mix à une série créée avant son introduction.
+        // Ajoute un Mix à une série : le premier pour les cours créés avant le Mix, puis Mix 2, Mix 3… avec d'autres questions.
         $id = idValide($entree['id'] ?? null);
         $cours = chargerCours($id);
         if (($cours['statut'] ?? '') !== 'pret') repondre(409, ['erreur' => 'incomplet']);
@@ -665,10 +665,11 @@ switch ($action) {
         $serie = (int) ($entree['serie'] ?? 0);
         $parNiveau = [];
         $dejaPoses = [];
+        $numero = 1;
         foreach ($cours['lots'] ?? [] as $l) {
             foreach ($l['items'] as $it) $dejaPoses[] = $it['angle'];
             if ((int) ($l['serie'] ?? 1) !== $serie) continue;
-            if ((int) $l['niveau'] === MIX) repondre(409, ['erreur' => 'mix_existe']);
+            if ((int) $l['niveau'] === MIX) { $numero = max($numero, (int) ($l['mix'] ?? 1) + 1); continue; }
             $parNiveau[(int) $l['niveau']] = ($parNiveau[(int) $l['niveau']] ?? 0) + count($l['items']);
         }
         if (!$parNiveau) repondre(400, ['erreur' => 'lot']);
@@ -676,7 +677,7 @@ switch ($action) {
         $n = max(6, min(15, (int) round(array_sum($parNiveau) / count($parNiveau))));
         ouvrirFlux();
         $plan = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consignePlanMix($n, $dejaPoses)]], schemaPlanMix(), (string) ($C['effort'] ?? 'high'), 16000, null, $id, $serie), true);
-        $lots = lotsDe(MIX, array_slice(itemsMix($plan['mix'] ?? []), 0, $n), $serie);
+        $lots = array_map(fn ($l) => $l + ['mix' => $numero], lotsDe(MIX, array_slice(itemsMix($plan['mix'] ?? []), 0, $n), $serie));
         if (!$lots) finirEnErreur('plan');
         $cours = avecVerrou($id, function () use ($id, $lots) {
             $c = chargerCours($id);
@@ -731,6 +732,7 @@ switch ($action) {
         $brut = json_decode(appelerClaude($source, [['type' => 'text', 'text' => consigneLot($niveau, $lot['items'], $autresAngles)]], schemaLot(),
             (string) ($C['effort'] ?? 'high'), 32000, compteurQuestions(count($lot['items'])), $id, $serieLot), true);
         $nouvelles = array_values(array_filter(array_map(fn ($r) => normaliserQuestion($r, $niveau, $serieLot), (array) ($brut['questions'] ?? []))));
+        if (isset($lot['mix'])) $nouvelles = array_map(fn ($q) => $q + ['mix' => (int) $lot['mix']], $nouvelles);
         if (!$nouvelles) finirEnErreur('invalid_json');
         $cours = $marquer('ok', $nouvelles);
         $termine = true;

@@ -27,7 +27,7 @@ Ne jamais écrire le code d'accès ni la clé API dans ce dépôt.
   Les pages de PDF qui contiennent des images (schémas, tableaux) sont aussi envoyées à `transcrire` en mode `visuels` :
   le texte de ces images n'est pas dans la couche texte du PDF.
   Ensuite `cours_creer` → `plan` (notions + `nb_par_rubrique` + liste des questions des 4 rubriques, en lots de 6 au plus) → `lot` pour chaque lot, 2 à la fois.
-  `mix` ajoute la rubrique Mix à une série créée avant elle (bouton « Ajouter le Mix »).
+  `mix` ajoute un Mix à une série : le premier pour les séries créées avant le Mix (« Ajouter le Mix »), puis Mix 2, Mix 3… (« Nouveau Mix »).
   Puis `cartes_creer` écrit les flashcards en un appel (aussi bouton « Créer les flashcards » pour les cours d'avant) ;
   un échec des cartes ne bloque pas le QCM.
   Les actions longues répondent en NDJSON (`{"progres":n}` puis `{"fin":...}` ou `{"erreur":...}`).
@@ -48,6 +48,8 @@ https://claude.ai/artifact/7kdKqvAfSHsNMESThNSsRg : ne fonctionne que pour quelq
 - Mélange de QRU (1 seule vraie) et de QCM ; dans les QCM, 2, 3, 4 ou 5 vraies, réparties au hasard.
 - 3 niveaux, présentés dans l'ordre : facile, moyen, difficile, puis une rubrique « Mix » : nouvelles questions
   de niveaux mélangés (environ un tiers de chaque), sous des angles différents des trois niveaux.
+  « Nouveau Mix » en crée d'autres (Mix 2, Mix 3…) avec des questions différentes de toutes celles déjà posées ;
+  chaque Mix a son bouton, « Tout le cours » = les trois niveaux puis le Mix 1.
 - Les 4 rubriques ont toujours le même nombre de questions, selon la longueur du cours : environ 10, jusqu'à 15 si le cours est long ;
   6 pour un cours court, sans répétition (choix de l'étudiante). Le serveur coupe les listes du plan à la plus courte.
 - Les questions couvrent TOUT le cours (révisions espacées J7, J14, J28 sans rouvrir le cours).
@@ -74,7 +76,8 @@ Matières : Appareil urinaire, Appareil respiratoire, Immunopathologie, Biostati
 ## Données
 
 Version hébergée (`hebergement/data/`) : `cours/<id>.json` (métadonnées + lots + `couts` : dollars par série, « 1 » = création), `questions/<id>.json`,
-`niveau` 4 = Mix (les items des lots Mix ont un champ `difficulte` 1 à 3, les questions Mix n'en ont pas),
+`niveau` 4 = Mix (les items des lots Mix ont un champ `difficulte` 1 à 3, les questions Mix n'en ont pas ;
+lots et questions Mix ont un champ `mix` = numéro du Mix, absent = 1 ; portée de QCM « 4 », « 4-2 », « 4-3 »…),
 `sources/<id>.txt`, `cartes/<id>.json` (`{cartes: [{id, recto, verso}]}` ; état dans le cours : `cartesStatut`, `nbCartes`),
 `progres.json` (une seule élève ; par cours `tentatives`, `dernier`, `cartes` : `{carteId: 1 sue | 0 à revoir}`
 et `paquet` en cours : `{file: [carteId restantes], total, resultats, debut, maj}`), `usage.json` (appels du jour, jetons du mois).

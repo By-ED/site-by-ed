@@ -218,6 +218,10 @@ const MATIERES = ["Appareil urinaire","Appareil respiratoire","Immunopathologie"
 const NIVEAUX = {1:"Facile",2:"Moyen",3:"Difficile",4:"Mix"};
 const NIVEAUX_PL = {1:"faciles",2:"moyennes",3:"difficiles",4:"du Mix"};
 const PORTEES = {tout:"Tout le cours","1":"Facile","2":"Moyen","3":"Difficile","4":"Mix",erreurs:"Mes erreurs"};
+// Plusieurs Mix par série : Mix 1 (champ mix absent), Mix 2, Mix 3… ; leur portée de QCM est « 4 », « 4-2 », « 4-3 »…
+const numMix = (q) => q.mix || 1;
+const nomNiveau = (q) => q.niveau === 4 && numMix(q) > 1 ? "Mix " + numMix(q) : NIVEAUX[q.niveau];
+const libellePortee = (p) => /^4-\d+$/.test(p) ? "Mix " + p.slice(2) : PORTEES[p] || p;
 const JALONS = [7,14,28];
 const LETTRES = "ABCDE";
 const MAX_TEXTE = 230000;
@@ -546,12 +550,18 @@ function vueCours(){
   const incomplet = !c.demo && c.statut !== "pret" && !genActive;
   const mode = S.mode;
   const depart = (portee, titre, sous, off, primaire) => h("button", {class:"btn depart" + (primaire ? " primaire" : ""), type:"button", disabled:(off || !qs || !qs.length) || null, onclick:() => demarrerQuiz(c, qs, portee)}, h("span", {}, titre), h("small", {}, sous));
-  // Cours créés avant la rubrique Mix : elle peut être ajoutée à la série affichée.
-  const mixAjoutable = qs && !c.demo && c.statut === "pret" && !genActive && !nb(4);
+  // Un bouton par Mix, puis « Nouveau Mix » (ou « Ajouter le Mix » pour les cours créés avant lui) sur la série affichée.
+  const mixes = qs ? [...new Set(qs.filter(q => q.niveau === 4).map(numMix))].sort((a, b) => a - b) : [];
+  const nbMix = (m) => qs.filter(q => q.niveau === 4 && numMix(q) === m).length;
+  const nbTout = qs ? qs.filter(q => q.niveau < 4 || numMix(q) === 1).length : total;
   const serieMix = serie === "toutes" ? series[series.length - 1] : serie;
-  const departMix = c.demo ? null : mixAjoutable
-    ? h("button", {class:"btn depart", type:"button", onclick:() => { S.confirmMix = c.id; render(); }}, h("span", {}, "Ajouter le Mix"), h("small", {}, "niveaux mélangés"))
-    : depart("4", NIVEAUX[4], nb(4) + " " + pluriel(nb(4), "question", "questions") + ", niveaux mélangés", !nb(4));
+  const mixSerie = (toutes || []).filter(q => q.niveau === 4 && (q.serie || 1) === serieMix).map(numMix);
+  const prochainMix = mixSerie.length ? Math.max(...mixSerie) + 1 : 1;
+  const mixPossible = qs && !c.demo && c.statut === "pret" && !genActive;
+  const departsMix = c.demo ? null : [
+    mixes.map(m => depart(m === 1 ? "4" : "4-" + m, mixes.length > 1 ? "Mix " + m : "Mix", nbMix(m) + " " + pluriel(nbMix(m), "question", "questions") + ", niveaux mélangés")),
+    mixPossible ? h("button", {class:"btn depart", type:"button", onclick:() => { S.confirmMix = c.id; render(); }},
+      h("span", {}, prochainMix === 1 ? "Ajouter le Mix" : "Nouveau Mix"), h("small", {}, prochainMix === 1 ? "niveaux mélangés" : "Mix " + prochainMix + ", d'autres questions")) : null];
   return h("div", {class:"vue"},
     lienRetour("Mes cours", () => aller("accueil")),
     h("header", {class:"cours-tete"},
@@ -578,14 +588,15 @@ function vueCours(){
       h("p", {class:"muted petit"}, mode === "entrainement" ? "Correction détaillée après chaque question." : "Aucune correction pendant le QCM : tout est corrigé à la fin, comme le jour de l'examen."),
       !qs ? h("p", {class:"muted"}, "Chargement des questions…") :
       h("div", {class:"departs"},
-        depart("tout", "Tout le cours", total + " questions, du facile au difficile" + (nb(4) ? ", puis le Mix" : ""), false, true),
+        depart("tout", "Tout le cours", nbTout + " questions, du facile au difficile" + (mixes.includes(1) ? ", puis le Mix" : ""), false, true),
         [1,2,3].map(n => depart(String(n), NIVEAUX[n], nb(n) + " " + pluriel(nb(n), "question", "questions"), !nb(n))),
-        departMix,
+        departsMix,
         depart("erreurs", "Mes erreurs", nErr ? nErr + " à refaire" : "aucune pour l'instant", !nErr)),
-      mixAjoutable && S.confirmMix === c.id ? h("div", {class:"note"},
-        h("p", {}, "Ajouter un Mix" + (series.length > 1 ? " à la série " + serieMix : "") + " : de nouvelles questions de niveaux mélangés, autant que dans un niveau. Compte 2 à 3 minutes, et environ un tiers du prix d'une création de cours."),
+      mixPossible && S.confirmMix === c.id ? h("div", {class:"note"},
+        h("p", {}, (prochainMix === 1 ? "Ajouter un Mix" : "Créer le Mix " + prochainMix) + (series.length > 1 ? " à la série " + serieMix : "")
+          + " : de nouvelles questions de niveaux mélangés, autant que dans un niveau, différentes de toutes celles déjà posées. Compte 2 à 3 minutes, et environ un tiers du prix d'une création de cours."),
         h("div", {class:"actions"},
-          h("button", {class:"btn primaire", type:"button", onclick:() => ajouterMix(c, serieMix)}, "Créer le Mix"),
+          h("button", {class:"btn primaire", type:"button", onclick:() => ajouterMix(c, serieMix, prochainMix)}, prochainMix === 1 ? "Créer le Mix" : "Créer le Mix " + prochainMix),
           h("button", {class:"btn", type:"button", onclick:() => { S.confirmMix = null; render(); }}, "Annuler"))) : null),
     c.demo ? null : blocCartes(c, prog, genActive),
     c.notions && c.notions.length ? h("details", {class:"notions"}, h("summary", {}, "Notions couvertes (" + c.notions.length + ")"), h("ul", {}, c.notions.map(n => h("li", {}, n)))) : null,
@@ -651,7 +662,7 @@ function historique(c, prog){
       h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", {}, "Jour"), h("th", {}, "Partie"), h("th", {}, "Mode"), h("th", {class:"num"}, "Points"), h("th", {class:"num"}, "/20"))),
       h("tbody", {}, t.map(x => h("tr", {},
         h("td", {}, fmtDate(x.date)), h("td", {}, c.demo ? "–" : "J+" + jPlus(c.creeLe, x.date)),
-        h("td", {}, PORTEES[x.portee] || x.portee), h("td", {}, x.mode === "examen" ? "Examen" : "Entraînement"),
+        h("td", {}, libellePortee(x.portee)), h("td", {}, x.mode === "examen" ? "Examen" : "Entraînement"),
         h("td", {class:"num"}, fmt(x.points) + " / " + x.max), h("td", {class:"num"}, sur20(x.points, x.max))))))));
 }
 function suppression(c){
@@ -674,7 +685,11 @@ async function supprimer(c){
 // ----- Quiz -----
 function demarrerQuiz(c, qs, portee){
   const dern = (S.progres[c.id] || {}).dernier || {};
-  const pool = portee === "tout" ? qs : portee === "erreurs" ? qs.filter(q => q.id in dern && dern[q.id] < 1) : qs.filter(q => q.niveau === Number(portee));
+  // « Tout le cours » = les trois niveaux puis le premier Mix ; les Mix suivants se font à part.
+  const [niv, mix] = portee.split("-").map(Number);
+  const pool = portee === "tout" ? qs.filter(q => q.niveau < 4 || numMix(q) === 1)
+    : portee === "erreurs" ? qs.filter(q => q.id in dern && dern[q.id] < 1)
+    : qs.filter(q => q.niveau === niv && (niv < 4 || numMix(q) === (mix || 1)));
   if (!pool.length) return;
   const ordre = [1,2,3,4].flatMap(n => shuffle(pool.filter(q => q.niveau === n)));
   S.quiz = {coursId:c.id, titre:c.titre, mode:S.mode, portee, i:0, enregistre:false,
@@ -755,7 +770,7 @@ function vueQuiz(){
       h("span", {class:"q-count"}, (Q.i + 1) + " / " + Q.items.length),
       h("span", {}, Q.mode === "examen" ? "Mode examen" : faits.length ? fmt(pts) + " / " + faits.length + " pt" : "Entraînement")),
     h("div", {class:"progress"}, barre),
-    h("div", {class:"q-meta"}, pips(q.niveau), h("span", {}, NIVEAUX[q.niveau]),
+    h("div", {class:"q-meta"}, pips(q.niveau), h("span", {}, nomNiveau(q)),
       h("span", {class:"tag " + (q.type === "QRU" ? "qru" : "qcm")}, q.type === "QRU" ? "QRU · une seule réponse" : "QCM · plusieurs réponses")),
     h("h2", {class:"enonce"}, q.enonce),
     corr ? ligneResultat(it) : null,
@@ -874,7 +889,7 @@ document.addEventListener("keydown", e => {
 function carteCorrection(x){
   const q = x.q;
   return h("article", {class:"carte-corr"},
-    h("div", {class:"q-meta"}, pips(q.niveau), h("span", {}, NIVEAUX[q.niveau]), h("span", {class:"tag " + (q.type === "QRU" ? "qru" : "qcm")}, q.type)),
+    h("div", {class:"q-meta"}, pips(q.niveau), h("span", {}, nomNiveau(q)), h("span", {class:"tag " + (q.type === "QRU" ? "qru" : "qcm")}, q.type)),
     h("h3", {class:"enonce petit"}, q.enonce),
     h("ul", {class:"props" + (q.type === "QRU" ? " qru" : "")}, x.ordre.map((pid, k) => {
       const p = q.propositions.find(y => y.id === pid), etat = etatDe(p, x.choix.includes(pid));
@@ -897,7 +912,7 @@ function vueFin(){
   const nErr = qs ? qs.filter(q => q.id in dern && dern[q.id] < 1).length : 0;
   const sauve = {ok:"Score enregistré.", echec:"Le score n'a pas pu être enregistré (connexion ?)."}[S.sauvegarde] || "";
   return h("div", {class:"vue"},
-    h("p", {class:"eyebrow"}, Q.titre + " · " + (PORTEES[Q.portee] || "") + " · " + (Q.mode === "examen" ? "examen" : "entraînement")),
+    h("p", {class:"eyebrow"}, Q.titre + " · " + libellePortee(Q.portee) + " · " + (Q.mode === "examen" ? "examen" : "entraînement")),
     h("div", {class:"bilan"},
       h("p", {class:"bigscore"}, fmt(tot), h("span", {class:"sur"}, " / " + max + " pt")),
       h("p", {class:"sur20"}, "soit " + sur20(tot, max) + " / 20"),
@@ -1000,7 +1015,6 @@ function messageErreur(e){
     cancelled:"Création arrêtée. Les questions déjà créées sont gardées.",
     deja_en_cours:"Une partie des questions est encore en cours de création. Réessaie « Compléter » dans quelques minutes.",
     incomplet:"Il manque encore des questions à ce cours : utilise d'abord « Compléter les questions manquantes ».",
-    mix_existe:"Cette série a déjà son Mix.",
     introuvable:"Ce cours n'existe plus sur le serveur.",
     format:"Format non pris en charge" + (e && e.fichier ? " (" + e.fichier + ")" : "") + ". Utilise PDF, Word (.docx), PowerPoint (.pptx), photos ou texte.",
     trop_court:"Le texte du cours est trop court ou n'a pas pu être lu.",
@@ -1218,9 +1232,9 @@ async function creerCartes(id, sig){
     S.gen.cartesEchec = true;
   }
 }
-async function ajouterMix(c, serie){
+async function ajouterMix(c, serie, numero){
   const ctl = new AbortController();
-  S.gen = {etapes:[], ctl, titre:(c.titre || "Cours") + " · Mix", fini:false, erreur:null, coursId:c.id, total:0, complet:false, coutAvant:(c.couts || {})[serie] || 0};
+  S.gen = {etapes:[], ctl, titre:(c.titre || "Cours") + " · Mix" + (numero > 1 ? " " + numero : ""), fini:false, erreur:null, coursId:c.id, total:0, complet:false, coutAvant:(c.couts || {})[serie] || 0};
   aller("generation", {confirmMix:null});
   try { await planEtLots(c.id, null, ctl.signal, false, serie); }
   catch (e){
@@ -1276,7 +1290,8 @@ async function planEtLots(id, cours, sig, nouvelle, serieMix){
   todo.forEach(i => { const n = lots[i].niveau; parNiv[n] = (parNiv[n] || 0) + 1; });
   todo.forEach(i => {
     const n = lots[i].niveau; rang[n] = (rang[n] || 0) + 1;
-    etape("lot" + i, "Questions " + NIVEAUX_PL[n] + (parNiv[n] > 1 ? " (" + rang[n] + "/" + parNiv[n] + ")" : ""), "attente", lots[i].items.length + " questions");
+    const nom = n === 4 && lots[i].mix > 1 ? "du Mix " + lots[i].mix : NIVEAUX_PL[n];
+    etape("lot" + i, "Questions " + nom + (parNiv[n] > 1 ? " (" + rang[n] + "/" + parNiv[n] + ")" : ""), "attente", lots[i].items.length + " questions");
   });
   let stop = null, total = cours.nbQuestions || 0, ajoutees = 0, echecs = 0;
   await pool(todo, 2, async i => {
